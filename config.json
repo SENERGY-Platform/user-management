@@ -1,0 +1,18 @@
+{
+	"ServerPort":		          "8080",
+	"LogLevel":		              "CALL",
+
+	"ForceUser": "false",
+	"ForceAuth": "false",
+
+	"KeycloakUrl": "http://keycloak:8080",
+	"AuthClientId": "userservice",
+	"AuthClientSecret": "",
+
+	"AuthExpirationTimeBuffer": 2,
+
+	"AmqpUrl": "amqp://user:pw@rabbitmq:5672/",
+	"UserTopic": "user",
+	"AmqpConsumerName": "users",
+	"AmqpReconnectTimeout": 10
+}
