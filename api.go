@@ -17,6 +17,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -107,6 +108,29 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}
 		response.To(res).Json(user.Id)
+	})
+
+	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+		req, err := http.NewRequest("GET", Config.KeycloakUrl+"/auth/realms/master/account/sessions", nil)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		req.Header.Set("Authorization", string(jwt.Impersonate))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}else{
+			res.Write(b)
+			res.WriteHeader(resp.StatusCode)
+		}
 	})
 
 	return
