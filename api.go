@@ -122,11 +122,11 @@ func getRoutes() (router *jwt_http_router.Router) {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}else{
+			res.Header().Set("Content-Type", "application/json")
 			err = json.NewEncoder(res).Encode(result)
 			if err != nil {
 				log.Println("ERROR: unable to respond", err)
 			}
-			res.Header().Set("Content-Type", "application/json")
 		}
 	})
 
