@@ -129,7 +129,6 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}else{
 			res.Write(b)
-			res.WriteHeader(resp.StatusCode)
 		}
 	})
 
