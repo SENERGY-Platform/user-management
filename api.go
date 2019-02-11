@@ -17,7 +17,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -111,24 +111,22 @@ func getRoutes() (router *jwt_http_router.Router) {
 	})
 
 	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		req, err := http.NewRequest("GET", Config.KeycloakUrl+"/auth/realms/master/account/sessions", nil)
+		token, err := EnsureAccess()
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		req.Header.Set("Authorization", string(jwt.Impersonate))
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		b, err := ioutil.ReadAll(resp.Body)
+		var result interface{}
+		err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId+"/sessions", &result)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}else{
-			res.Write(b)
+			err = json.NewEncoder(res).Encode(result)
+			if err != nil {
+				log.Println("ERROR: unable to respond", err)
+			}
+			res.Header().Set("Content-Type", "application/json")
 		}
 	})
 
