@@ -172,6 +172,47 @@ func getRoutes() (router *jwt_http_router.Router) {
 		}
 	})
 
+	router.PUT("/info", func(res http.ResponseWriter, request *http.Request, params jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+		infoRequest := UserInfoRequest{}
+		err := json.NewDecoder(request.Body).Decode(&infoRequest)
+		if err != nil {
+			log.Println("ERROR:", err)
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		token, err := EnsureAccess()
+		if err != nil {
+			log.Println("ERROR:", err)
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		r, w := io.Pipe()
+		go func(){
+			defer w.Close()
+			err = json.NewEncoder(w).Encode(map[string]interface{}{
+				"firstName": infoRequest.FirstName,
+				"lastName": infoRequest.LastName,
+				"email": infoRequest.Email,
+			})
+			if err != nil {
+				log.Println("ERROR:", err)
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}()
+		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId, "application/json", r)
+		if err != nil {
+			log.Println("ERROR:", err)
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		res.WriteHeader(resp.StatusCode)
+		_ , err = io.Copy(res, resp.Body)
+		if err != nil {
+			log.Println("ERROR: /info io.Copy ", err)
+		}
+	})
+
 	return
 }
 
@@ -186,4 +227,10 @@ func isAdmin(jwt jwt_http_router.Jwt) bool {
 
 type PasswordRequest struct {
 	Password string `json:"password"`
+}
+
+type UserInfoRequest struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
 }
