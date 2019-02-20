@@ -135,31 +135,41 @@ func getRoutes() (router *jwt_http_router.Router) {
 		passwordRequest := PasswordRequest{}
 		err := json.NewDecoder(request.Body).Decode(&passwordRequest)
 		if err != nil {
+			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
 		token, err := EnsureAccess()
 		if err != nil {
+			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		r, w := io.Pipe()
-		err = json.NewEncoder(w).Encode(map[string]interface{}{
-			"type":"password",
-			"value":passwordRequest.Password,
-			"temporary":false,
-		})
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		go func(){
+			defer w.Close()
+			err = json.NewEncoder(w).Encode(map[string]interface{}{
+				"type":"password",
+				"value":passwordRequest.Password,
+				"temporary":false,
+			})
+			if err != nil {
+				log.Println("ERROR:", err)
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}()
 		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId+"/reset-password", "application/json", r)
 		if err != nil {
+			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		res.WriteHeader(resp.StatusCode)
-		io.Copy(res, resp.Body)
+		_ , err = io.Copy(res, resp.Body)
+		if err != nil {
+			log.Println("ERROR: /password io.Copy ", err)
+		}
 	})
 
 	return
