@@ -1,4 +1,4 @@
-module github.com/SENERGY-Platform/users
+module github.com/SENERGY-Platform/user-management
 
 require (
 	github.com/SmartEnergyPlatform/jwt-http-router v0.0.0-20181018071703-2fca7308e21f
