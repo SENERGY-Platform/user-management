@@ -57,6 +57,31 @@ func (this JwtImpersonate) Post(url string, contentType string, body io.Reader) 
 	return
 }
 
+func (this JwtImpersonate) Put(url string, contentType string, body io.Reader) (resp *http.Response, err error) {
+	req, err := http.NewRequest("PUT", url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", string(this))
+	req.Header.Set("Content-Type", contentType)
+
+	resp, err = http.DefaultClient.Do(req)
+
+	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
+		err = errors.New("access denied")
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		err = errors.New("not found")
+	}
+	if err != nil {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		resp.Body.Close()
+		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
+	}
+	return
+}
+
 func (this JwtImpersonate) Delete(url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -88,6 +113,23 @@ func (this JwtImpersonate) PostJSON(url string, body interface{}, result interfa
 		return
 	}
 	resp, err := this.Post(url, "application/json", b)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if result != nil {
+		err = json.NewDecoder(resp.Body).Decode(result)
+	}
+	return
+}
+
+func (this JwtImpersonate) PutJSON(url string, body interface{}, result interface{}) (err error) {
+	b := new(bytes.Buffer)
+	err = json.NewEncoder(b).Encode(body)
+	if err != nil {
+		return
+	}
+	resp, err := this.Put(url, "application/json", b)
 	if err != nil {
 		return err
 	}

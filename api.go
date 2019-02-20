@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 
@@ -130,6 +131,37 @@ func getRoutes() (router *jwt_http_router.Router) {
 		}
 	})
 
+	router.PUT("/password", func(res http.ResponseWriter, request *http.Request, params jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+		passwordRequest := PasswordRequest{}
+		err := json.NewDecoder(request.Body).Decode(&passwordRequest)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		token, err := EnsureAccess()
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		r, w := io.Pipe()
+		err = json.NewEncoder(w).Encode(map[string]interface{}{
+			"type":"password",
+			"value":passwordRequest.Password,
+			"temporary":false,
+		})
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId+"/reset-password", "application/json", r)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		res.WriteHeader(resp.StatusCode)
+		io.Copy(res, resp.Body)
+	})
+
 	return
 }
 
@@ -140,4 +172,8 @@ func isAdmin(jwt jwt_http_router.Jwt) bool {
 		}
 	}
 	return false
+}
+
+type PasswordRequest struct {
+	Password string `json:"password"`
 }
