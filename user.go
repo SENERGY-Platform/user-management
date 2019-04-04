@@ -35,7 +35,7 @@ func GetUserByName(name string) (user User, err error) {
 		return user, err
 	}
 	temp := []User{}
-	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/master/users?username="+url.QueryEscape(name), &temp)
+	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users?username="+url.QueryEscape(name), &temp)
 	if err != nil {
 		return user, err
 	}
@@ -66,7 +66,7 @@ func GetUserById(id string) (user User, err error) {
 	if err != nil {
 		return user, err
 	}
-	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+url.QueryEscape(id), &user)
+	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+url.QueryEscape(id), &user)
 	return
 }
 
@@ -76,7 +76,7 @@ func DeleteKeycloakUser(id string) (err error) {
 		log.Println("ERROR: unable to ensure access", err)
 		return err
 	}
-	resp, err := token.Delete(Config.KeycloakUrl + "/auth/admin/realms/master/users/" + url.QueryEscape(id))
+	resp, err := token.Delete(Config.KeycloakUrl + "/auth/admin/realms/"+Config.KeycloakRealm+"/users/" + url.QueryEscape(id))
 	if err != nil && resp.StatusCode == http.StatusNotFound {
 		log.Println("WARNING: user dosnt exist; command will be ignored")
 		err = nil

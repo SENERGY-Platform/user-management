@@ -118,7 +118,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}
 		var result interface{}
-		err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId+"/sessions", &result)
+		err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+jwt.UserId+"/sessions", &result)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -159,7 +159,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 				return
 			}
 		}()
-		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId+"/reset-password", "application/json", r)
+		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+jwt.UserId+"/reset-password", "application/json", r)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -200,7 +200,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 				return
 			}
 		}()
-		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/master/users/"+jwt.UserId, "application/json", r)
+		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+jwt.UserId, "application/json", r)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
