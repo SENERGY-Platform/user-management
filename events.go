@@ -17,13 +17,14 @@
 package main
 
 import (
+	"github.com/SENERGY-Platform/user-management/kafka"
 	"log"
 
 	"encoding/json"
 	"errors"
 )
 
-var conn *AmqpConn
+var conn kafka.Interface
 
 type UserCommandMsg struct {
 	Command string `json:"command"`
@@ -32,13 +33,13 @@ type UserCommandMsg struct {
 
 func InitEventConn() {
 	var err error
-	conn, err = InitAmqpConn(Config.AmqpUrl, []string{Config.UserTopic}, Config.AmqpReconnectTimeout)
+	conn, err = kafka.Init(Config.ZookeeperUrl, Config.ConsumerGroup, Config.Debug)
 	if err != nil {
 		log.Fatal("ERROR: while initializing amqp connection", err)
 	}
 
 	log.Println("init permissions handler")
-	err = conn.Consume(Config.AmqpConsumerName+"_"+Config.UserTopic, Config.UserTopic, handleUserCommand)
+	err = conn.Consume(Config.UserTopic, handleUserCommand)
 	if err != nil {
 		log.Fatal("ERROR: while initializing perm consumer", err)
 		return
@@ -49,13 +50,13 @@ func StopEventConn() {
 	conn.Close()
 }
 
-func sendEvent(command interface{}) error {
+func sendEvent(topic string, key string, command interface{}) error {
 	payload, err := json.Marshal(command)
 	if err != nil {
 		log.Println("ERROR: event marshaling:", err)
 		return err
 	}
-	return conn.Publish(Config.UserTopic, payload)
+	return conn.Publish(topic, key, payload)
 }
 
 func DeleteUser(id string) error {
@@ -66,7 +67,7 @@ func DeleteUser(id string) error {
 	if user.Id != id {
 		return errors.New("no matching user found")
 	}
-	return sendEvent(UserCommandMsg{
+	return sendEvent(Config.UserTopic, "DELETE_"+id, UserCommandMsg{
 		Command: "DELETE",
 		Id:      id,
 	})

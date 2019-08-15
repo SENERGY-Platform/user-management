@@ -11,8 +11,8 @@
 
 	"AuthExpirationTimeBuffer": 2,
 
-	"AmqpUrl": "amqp://user:pw@rabbitmq:5672/",
+	"ZookeeperUrl": "zk:2181",
 	"UserTopic": "user",
-	"AmqpConsumerName": "users",
-	"AmqpReconnectTimeout": 10
+	"ConsumerGroup": "users",
+	"Debug": false
 }

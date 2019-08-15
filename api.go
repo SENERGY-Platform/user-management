@@ -30,7 +30,6 @@ import (
 )
 
 func StartApi() {
-	log.Println("connecto amqp: ", Config.AmqpUrl)
 	InitEventConn()
 	defer StopEventConn()
 	log.Println("start server on port: ", Config.ServerPort)
@@ -122,7 +121,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
-		}else{
+		} else {
 			res.Header().Set("Content-Type", "application/json")
 			err = json.NewEncoder(res).Encode(result)
 			if err != nil {
@@ -146,12 +145,12 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}
 		r, w := io.Pipe()
-		go func(){
+		go func() {
 			defer w.Close()
 			err = json.NewEncoder(w).Encode(map[string]interface{}{
-				"type":"password",
-				"value":passwordRequest.Password,
-				"temporary":false,
+				"type":      "password",
+				"value":     passwordRequest.Password,
+				"temporary": false,
 			})
 			if err != nil {
 				log.Println("ERROR:", err)
@@ -166,7 +165,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}
 		res.WriteHeader(resp.StatusCode)
-		_ , err = io.Copy(res, resp.Body)
+		_, err = io.Copy(res, resp.Body)
 		if err != nil {
 			log.Println("ERROR: /password io.Copy ", err)
 		}
@@ -187,12 +186,12 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}
 		r, w := io.Pipe()
-		go func(){
+		go func() {
 			defer w.Close()
 			err = json.NewEncoder(w).Encode(map[string]interface{}{
 				"firstName": infoRequest.FirstName,
-				"lastName": infoRequest.LastName,
-				"email": infoRequest.Email,
+				"lastName":  infoRequest.LastName,
+				"email":     infoRequest.Email,
 			})
 			if err != nil {
 				log.Println("ERROR:", err)
@@ -207,7 +206,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 			return
 		}
 		res.WriteHeader(resp.StatusCode)
-		_ , err = io.Copy(res, resp.Body)
+		_, err = io.Copy(res, resp.Body)
 		if err != nil {
 			log.Println("ERROR: /info io.Copy ", err)
 		}
