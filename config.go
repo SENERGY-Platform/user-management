@@ -32,6 +32,7 @@ type ConfigStruct struct {
 	LogLevel   string
 
 	KeycloakUrl              string
+	KeycloakRealm            string
 	AuthClientId             string
 	AuthClientSecret         string
 	AuthExpirationTimeBuffer float64

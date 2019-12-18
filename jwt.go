@@ -221,7 +221,7 @@ func EnsureAccess() (token JwtImpersonate, err error) {
 
 func getOpenidToken(token *OpenidToken) (err error) {
 	requesttime := time.Now()
-	resp, err := http.PostForm(Config.KeycloakUrl+"/auth/realms/master/protocol/openid-connect/token", url.Values{
+	resp, err := http.PostForm(Config.KeycloakUrl+"/auth/realms/"+Config.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
 		"client_id":     {Config.AuthClientId},
 		"client_secret": {Config.AuthClientSecret},
 		"grant_type":    {"client_credentials"},
@@ -245,7 +245,7 @@ func getOpenidToken(token *OpenidToken) (err error) {
 
 func refreshOpenidToken(token *OpenidToken) (err error) {
 	requesttime := time.Now()
-	resp, err := http.PostForm(Config.KeycloakUrl+"/auth/realms/master/protocol/openid-connect/token", url.Values{
+	resp, err := http.PostForm(Config.KeycloakUrl+"/auth/realms/"+Config.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
 		"client_id":     {Config.AuthClientId},
 		"client_secret": {Config.AuthClientSecret},
 		"refresh_token": {token.RefreshToken},
