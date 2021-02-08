@@ -212,6 +212,15 @@ func getRoutes() (router *jwt_http_router.Router) {
 		}
 	})
 
+	router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+		roles, err := GetRoles()
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response.To(res).Json(roles)
+	})
+
 	return
 }
 
