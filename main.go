@@ -17,10 +17,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
 	"os/signal"
+	"time"
 
 	"syscall"
 )
@@ -29,15 +31,31 @@ func main() {
 	configLocation := flag.String("config", "config.json", "configuration file")
 	flag.Parse()
 
-	err := LoadConfig(*configLocation)
+	conf, err := Load(*configLocation)
 	if err != nil {
+		log.Fatal("ERROR: unable to load config", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg, err := StartApi(ctx, conf)
+	if err != nil {
+		cancel()
+		if wg != nil {
+			wg.Wait()
+		}
 		log.Fatal(err)
 	}
 
-	go StartApi()
+	var shutdownTime time.Time
+	go func() {
+		shutdown := make(chan os.Signal, 1)
+		signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+		sig := <-shutdown
+		log.Println("received shutdown signal", sig)
+		shutdownTime = time.Now()
+		cancel()
+	}()
 
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
-	sig := <-shutdown
-	log.Println("received shutdown signal", sig)
+	wg.Wait()
+	log.Println("Shutdown complete, took", time.Since(shutdownTime))
 }

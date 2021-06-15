@@ -187,20 +187,20 @@ type OpenidToken struct {
 
 var openid *OpenidToken
 
-func EnsureAccess() (token JwtImpersonate, err error) {
+func EnsureAccess(conf Config) (token JwtImpersonate, err error) {
 	if openid == nil {
 		openid = &OpenidToken{}
 	}
 	duration := time.Now().Sub(openid.RequestTime).Seconds()
 
-	if openid.AccessToken != "" && openid.ExpiresIn-Config.AuthExpirationTimeBuffer > duration {
+	if openid.AccessToken != "" && openid.ExpiresIn-conf.AuthExpirationTimeBuffer > duration {
 		token = JwtImpersonate("Bearer " + openid.AccessToken)
 		return
 	}
 
-	if openid.RefreshToken != "" && openid.RefreshExpiresIn-Config.AuthExpirationTimeBuffer < duration {
+	if openid.RefreshToken != "" && openid.RefreshExpiresIn-conf.AuthExpirationTimeBuffer < duration {
 		log.Println("refresh token", openid.RefreshExpiresIn, duration)
-		err = refreshOpenidToken(openid)
+		err = refreshOpenidToken(openid, conf)
 		if err != nil {
 			log.Println("WARNING: unable to use refreshtoken", err)
 		} else {
@@ -210,7 +210,7 @@ func EnsureAccess() (token JwtImpersonate, err error) {
 	}
 
 	log.Println("get new access token")
-	err = getOpenidToken(openid)
+	err = getOpenidToken(openid, conf)
 	if err != nil {
 		log.Println("ERROR: unable to get new access token", err)
 		openid = &OpenidToken{}
@@ -219,11 +219,11 @@ func EnsureAccess() (token JwtImpersonate, err error) {
 	return
 }
 
-func getOpenidToken(token *OpenidToken) (err error) {
+func getOpenidToken(token *OpenidToken, conf Config) (err error) {
 	requesttime := time.Now()
-	resp, err := http.PostForm(Config.KeycloakUrl+"/auth/realms/"+Config.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
-		"client_id":     {Config.AuthClientId},
-		"client_secret": {Config.AuthClientSecret},
+	resp, err := http.PostForm(conf.KeycloakUrl+"/auth/realms/"+conf.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
+		"client_id":     {conf.AuthClientId},
+		"client_secret": {conf.AuthClientSecret},
 		"grant_type":    {"client_credentials"},
 	})
 
@@ -243,11 +243,11 @@ func getOpenidToken(token *OpenidToken) (err error) {
 	return
 }
 
-func refreshOpenidToken(token *OpenidToken) (err error) {
+func refreshOpenidToken(token *OpenidToken, conf Config) (err error) {
 	requesttime := time.Now()
-	resp, err := http.PostForm(Config.KeycloakUrl+"/auth/realms/"+Config.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
-		"client_id":     {Config.AuthClientId},
-		"client_secret": {Config.AuthClientSecret},
+	resp, err := http.PostForm(conf.KeycloakUrl+"/auth/realms/"+conf.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
+		"client_id":     {conf.AuthClientId},
+		"client_secret": {conf.AuthClientSecret},
 		"refresh_token": {token.RefreshToken},
 		"grant_type":    {"refresh_token"},
 	})

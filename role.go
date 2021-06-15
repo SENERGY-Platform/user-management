@@ -25,12 +25,12 @@ type Role struct {
 	ContainerId string `json:"containerId"`
 }
 
-func GetRoles() (roles []Role, err error) {
-	token, err := EnsureAccess()
+func GetRoles(conf Config) (roles []Role, err error) {
+	token, err := EnsureAccess(conf)
 	if err != nil {
 		return
 	}
-	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/roles", &roles)
+	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/roles", &roles)
 	if err != nil {
 		return
 	}

@@ -17,38 +17,52 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"io"
-	"log"
-	"net/http"
-
-	"github.com/SmartEnergyPlatform/util/http/response"
-
 	"github.com/SmartEnergyPlatform/jwt-http-router"
 	"github.com/SmartEnergyPlatform/util/http/cors"
 	"github.com/SmartEnergyPlatform/util/http/logger"
+	"github.com/SmartEnergyPlatform/util/http/response"
+	"io"
+	"log"
+	"net/http"
+	"sync"
 )
 
-func StartApi() {
-	InitEventConn()
-	defer StopEventConn()
-	log.Println("start server on port: ", Config.ServerPort)
-	httpHandler := getRoutes()
-	corseHandler := cors.New(httpHandler)
-	logger := logger.New(corseHandler, Config.LogLevel)
-	log.Println(http.ListenAndServe(":"+Config.ServerPort, logger))
+type api struct {
+	eventHandler *EventHandler
+	conf         Config
 }
 
-func getRoutes() (router *jwt_http_router.Router) {
+func StartApi(ctx context.Context, conf Config) (wg *sync.WaitGroup, err error) {
+	wg = &sync.WaitGroup{}
+
+	eventHandler, err := InitEventConn(ctx, wg, conf)
+	if err != nil {
+		return
+	}
+	apiInstance := &api{
+		eventHandler: eventHandler,
+		conf:         conf,
+	}
+	log.Println("start server on port: ", conf.ServerPort)
+	httpHandler := apiInstance.getRoutes()
+	corseHandler := cors.New(httpHandler)
+	logg := logger.New(corseHandler, conf.LogLevel)
+	go func() { log.Println(http.ListenAndServe(":"+conf.ServerPort, logg)) }()
+	return
+}
+
+func (api *api) getRoutes() (router *jwt_http_router.Router) {
 	router = jwt_http_router.New(jwt_http_router.JwtConfig{
-		ForceUser: Config.ForceUser == "true",
-		ForceAuth: Config.ForceAuth == "true",
-		PubRsa:    Config.JwtPubRsa,
+		ForceUser: api.conf.ForceUser == "true",
+		ForceAuth: api.conf.ForceAuth == "true",
+		PubRsa:    api.conf.JwtPubRsa,
 	})
 
 	router.GET("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
 		id := ps.ByName("id")
-		user, err := GetUserById(id)
+		user, err := GetUserById(id, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -63,7 +77,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 			http.Error(res, "access denied", http.StatusUnauthorized)
 			return
 		}
-		err := DeleteUser(id)
+		err := api.eventHandler.DeleteUser(id)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusPreconditionFailed)
 			return
@@ -72,7 +86,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 	})
 
 	router.DELETE("/user", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		err := DeleteUser(jwt.UserId)
+		err := api.eventHandler.DeleteUser(jwt.UserId)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusPreconditionFailed)
 			return
@@ -82,7 +96,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 
 	router.GET("/user/id/:id/name", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
 		id := ps.ByName("id")
-		user, err := GetUserById(id)
+		user, err := GetUserById(id, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -92,7 +106,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 
 	router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
 		name := ps.ByName("name")
-		user, err := GetUserByName(name)
+		user, err := GetUserByName(name, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -102,7 +116,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 
 	router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
 		name := ps.ByName("name")
-		user, err := GetUserByName(name)
+		user, err := GetUserByName(name, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -111,13 +125,13 @@ func getRoutes() (router *jwt_http_router.Router) {
 	})
 
 	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		token, err := EnsureAccess()
+		token, err := EnsureAccess(api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		var result interface{}
-		err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+jwt.UserId+"/sessions", &result)
+		err = token.GetJSON(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+jwt.UserId+"/sessions", &result)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -138,7 +152,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		token, err := EnsureAccess()
+		token, err := EnsureAccess(api.conf)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -158,7 +172,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 				return
 			}
 		}()
-		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+jwt.UserId+"/reset-password", "application/json", r)
+		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+jwt.UserId+"/reset-password", "application/json", r)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -179,7 +193,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		token, err := EnsureAccess()
+		token, err := EnsureAccess(api.conf)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -199,7 +213,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 				return
 			}
 		}()
-		resp, err := token.Put(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+jwt.UserId, "application/json", r)
+		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+jwt.UserId, "application/json", r)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -213,7 +227,7 @@ func getRoutes() (router *jwt_http_router.Router) {
 	})
 
 	router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		roles, err := GetRoles()
+		roles, err := GetRoles(api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return

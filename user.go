@@ -29,13 +29,13 @@ type User struct {
 	Attributes map[string]interface{} `json:"attributes"`
 }
 
-func GetUserByName(name string) (user User, err error) {
-	token, err := EnsureAccess()
+func GetUserByName(name string, conf Config) (user User, err error) {
+	token, err := EnsureAccess(conf)
 	if err != nil {
 		return user, err
 	}
 	temp := []User{}
-	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users?username="+url.QueryEscape(name), &temp)
+	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users?username="+url.QueryEscape(name), &temp)
 	if err != nil {
 		return user, err
 	}
@@ -61,23 +61,23 @@ func filterExact(users []User, name string) (result []User) {
 	return
 }
 
-func GetUserById(id string) (user User, err error) {
-	token, err := EnsureAccess()
+func GetUserById(id string, conf Config) (user User, err error) {
+	token, err := EnsureAccess(conf)
 	if err != nil {
 		return user, err
 	}
-	err = token.GetJSON(Config.KeycloakUrl+"/auth/admin/realms/"+Config.KeycloakRealm+"/users/"+url.QueryEscape(id), &user)
+	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users/"+url.QueryEscape(id), &user)
 	return
 }
 
-func DeleteKeycloakUser(id string) (err error) {
-	token, err := EnsureAccess()
+func DeleteKeycloakUser(id string, conf Config) (err error) {
+	token, err := EnsureAccess(conf)
 	if err != nil {
 		log.Println("ERROR: unable to ensure access", err)
 		return err
 	}
-	resp, err := token.Delete(Config.KeycloakUrl + "/auth/admin/realms/"+Config.KeycloakRealm+"/users/" + url.QueryEscape(id))
-	if err != nil && resp.StatusCode == http.StatusNotFound {
+	resp, err := token.Delete(conf.KeycloakUrl + "/auth/admin/realms/" + conf.KeycloakRealm + "/users/" + url.QueryEscape(id))
+	if err != nil || (resp != nil && resp.StatusCode == http.StatusNotFound) {
 		log.Println("WARNING: user dosnt exist; command will be ignored")
 		err = nil
 	}

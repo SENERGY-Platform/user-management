@@ -27,7 +27,7 @@ import (
 	"strings"
 )
 
-type ConfigStruct struct {
+type Config struct {
 	ServerPort string
 	LogLevel   string
 
@@ -41,32 +41,27 @@ type ConfigStruct struct {
 	ForceUser string
 	ForceAuth string
 
-	UserTopic     string
-	ZookeeperUrl  string
-	ConsumerGroup string
-	Debug         bool
+	UserTopic      string
+	KafkaBootstrap string
+	ConsumerGroup  string
+	Debug          bool
 }
 
-type ConfigType *ConfigStruct
-
-var Config ConfigType
-
-func LoadConfig(location string) error {
-	file, error := os.Open(location)
-	if error != nil {
-		log.Println("error on config load: ", error)
-		return error
+//loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
+func Load(location string) (config Config, err error) {
+	file, err := os.Open(location)
+	if err != nil {
+		log.Println("error on config load: ", err)
+		return config, err
 	}
 	decoder := json.NewDecoder(file)
-	configuration := ConfigStruct{}
-	error = decoder.Decode(&configuration)
-	if error != nil {
-		log.Println("invalid config json: ", error)
-		return error
+	err = decoder.Decode(&config)
+	if err != nil {
+		log.Println("invalid config json: ", err)
+		return config, err
 	}
-	HandleEnvironmentVars(&configuration)
-	Config = &configuration
-	return nil
+	handleEnvironmentVars(&config)
+	return config, nil
 }
 
 var camel = regexp.MustCompile("(^[^A-Z]*|[A-Z]*)([A-Z][^A-Z]+|$)")
@@ -85,7 +80,7 @@ func fieldNameToEnvName(s string) string {
 }
 
 // preparations for docker
-func HandleEnvironmentVars(config ConfigType) {
+func handleEnvironmentVars(config *Config) {
 	configValue := reflect.Indirect(reflect.ValueOf(config))
 	configType := configValue.Type()
 	for index := 0; index < configType.NumField(); index++ {

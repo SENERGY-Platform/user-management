@@ -17,64 +17,71 @@
 package main
 
 import (
+	"context"
 	"github.com/SENERGY-Platform/user-management/kafka"
 	"log"
+	"sync"
+	"time"
 
 	"encoding/json"
 	"errors"
 )
-
-var conn kafka.Interface
 
 type UserCommandMsg struct {
 	Command string `json:"command"`
 	Id      string `json:"id"`
 }
 
-func InitEventConn() {
-	var err error
-	conn, err = kafka.Init(Config.ZookeeperUrl, Config.ConsumerGroup, Config.Debug)
-	if err != nil {
-		log.Fatal("ERROR: while initializing amqp connection", err)
-	}
+type EventHandler struct {
+	conf Config
+	conn kafka.Interface
+}
 
+func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf Config) (handler *EventHandler, err error) {
+	conn, err := kafka.Init(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.Debug)
+	if err != nil {
+		log.Println("WARN: problem initializing kafka connection: ", err)
+		log.Println("WARN: client will retry until successful")
+	}
+	handler = &EventHandler{
+		conf: conf,
+		conn: conn,
+	}
 	log.Println("init permissions handler")
-	err = conn.Consume(Config.UserTopic, handleUserCommand)
+	err = conn.Consume(conf.UserTopic, handler.handleUserCommand)
 	if err != nil {
-		log.Fatal("ERROR: while initializing perm consumer", err)
-		return
+		log.Println("WARN: problem initializing kafka connection: ", err)
+		log.Println("WARN: client will retry until successful")
+		err = nil
 	}
+	return
 }
 
-func StopEventConn() {
-	conn.Close()
-}
-
-func sendEvent(topic string, key string, command interface{}) error {
+func (handler *EventHandler) sendEvent(topic string, key string, command interface{}) error {
 	payload, err := json.Marshal(command)
 	if err != nil {
 		log.Println("ERROR: event marshaling:", err)
 		return err
 	}
-	return conn.Publish(topic, key, payload)
+	return handler.conn.Publish(topic, key, payload)
 }
 
-func DeleteUser(id string) error {
-	user, err := GetUserById(id)
+func (handler *EventHandler) DeleteUser(id string) error {
+	user, err := GetUserById(id, handler.conf)
 	if err != nil {
 		return err
 	}
 	if user.Id != id {
 		return errors.New("no matching user found")
 	}
-	return sendEvent(Config.UserTopic, "DELETE_"+id, UserCommandMsg{
+	return handler.sendEvent(handler.conf.UserTopic, "DELETE_"+id, UserCommandMsg{
 		Command: "DELETE",
 		Id:      id,
 	})
 }
 
-func handleUserCommand(msg []byte) (err error) {
-	log.Println(Config.UserTopic, string(msg))
+func (handler *EventHandler) handleUserCommand(_ string, msg []byte, _ time.Time) (err error) {
+	log.Println(handler.conf.UserTopic, string(msg))
 	command := UserCommandMsg{}
 	err = json.Unmarshal(msg, &command)
 	if err != nil {
@@ -82,7 +89,7 @@ func handleUserCommand(msg []byte) (err error) {
 	}
 	switch command.Command {
 	case "DELETE":
-		return DeleteKeycloakUser(command.Id)
+		return DeleteKeycloakUser(command.Id, handler.conf)
 	}
 	return errors.New("unable to handle permission command: " + string(msg))
 }

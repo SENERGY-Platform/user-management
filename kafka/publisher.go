@@ -1,77 +1,74 @@
+/*
+ * Copyright 2021 InfAI (CC SES)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package kafka
 
 import (
 	"context"
-	"errors"
-	"github.com/segmentio/kafka-go"
-	"io/ioutil"
+	"github.com/Shopify/sarama"
 	"log"
-	"os"
 	"runtime/debug"
-	"time"
+	"sync"
 )
 
-func (this *Kafka) Publish(topic string, key string, payload []byte) error {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	publ, ok := this.publishers[topic]
-	if !ok {
+type Publisher struct {
+	kafkaBootstrap string
+	syncProducer   sarama.SyncProducer
+}
+
+func NewPublisher(kafkaBootstrap string, ctx context.Context, wg *sync.WaitGroup) (*Publisher, error) {
+	p := &Publisher{kafkaBootstrap: kafkaBootstrap}
+	var err error
+	p.syncProducer, err = p.ensureConnection()
+	wg.Add(1)
+	go func() {
+		<-ctx.Done()
+		if p.syncProducer != nil {
+			_ = p.syncProducer.Close()
+		}
+		log.Println("Kafka Publisher closed")
+		wg.Done()
+	}()
+	return p, err
+}
+
+func (publisher *Publisher) ensureConnection() (syncProducer sarama.SyncProducer, err error) {
+	if publisher.syncProducer != nil {
+		return publisher.syncProducer, nil
+	}
+	kafkaConf := sarama.NewConfig()
+	kafkaConf.Producer.Return.Successes = true
+	syncP, err := sarama.NewSyncProducer([]string{publisher.kafkaBootstrap}, kafkaConf)
+	if err != nil {
+		publisher.syncProducer = syncP
+	}
+	return syncP, err
+}
+
+func (this *Publisher) Publish(topic string, key string, payload []byte) error {
+	if this.syncProducer == nil {
 		var err error
-		publ, err = NewPublisher(this.zk, topic, this.debug)
+		this.syncProducer, err = this.ensureConnection()
 		if err != nil {
 			return err
 		}
-		this.publishers[topic] = publ
 	}
-	return publ.Publish(topic, key, payload)
-}
-
-type Publisher struct {
-	writer *kafka.Writer
-}
-
-func NewPublisher(zookeeperUrl string, topic string, debug bool) (*Publisher, error) {
-	broker, err := GetBroker(zookeeperUrl)
-	if err != nil {
-		return nil, err
-	}
-	if len(broker) == 0 {
-		return nil, errors.New("missing kafka broker")
-	}
-	writer, err := getProducer(broker, topic, debug)
-	if err != nil {
-		return nil, err
-	}
-	return &Publisher{writer: writer}, nil
-}
-
-func (this *Publisher) Publish(topic string, key string, payload []byte) (err error) {
-	err = this.writer.WriteMessages(
-		context.Background(),
-		kafka.Message{
-			Key:   []byte(key),
-			Value: payload,
-			Time:  time.Now(),
-		},
-	)
+	_, _, err := this.syncProducer.SendMessage(&sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(payload), Key: sarama.StringEncoder(key)})
 	if err != nil {
 		debug.PrintStack()
 	}
 	return err
-}
-
-func getProducer(broker []string, topic string, debug bool) (writer *kafka.Writer, err error) {
-	var logger *log.Logger
-	if debug {
-		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", 0)
-	} else {
-		logger = log.New(ioutil.Discard, "", 0)
-	}
-	writer = kafka.NewWriter(kafka.WriterConfig{
-		Brokers:     broker,
-		Topic:       topic,
-		MaxAttempts: 10,
-		Logger:      logger,
-	})
-	return writer, err
 }

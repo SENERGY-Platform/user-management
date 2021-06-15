@@ -18,109 +18,116 @@ package kafka
 
 import (
 	"context"
-	"github.com/segmentio/kafka-go"
-	"io"
-	"io/ioutil"
+	"github.com/Shopify/sarama"
 	"log"
-	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 )
 
-func (this *Kafka) Consume(topic string, listener func(delivery []byte) error) (err error) {
-	this.mux.Lock()
-	defer this.mux.Unlock()
-	consumer, err := NewConsumer(this.zk, this.group, topic, func(topic string, msg []byte) error {
-		return listener(msg)
-	}, func(err error, consumer *Consumer) {
-		debug.PrintStack()
-		log.Fatal(err)
-	})
-	if err != nil {
-		return err
-	}
-	err = consumer.start()
-	if err != nil {
-		return err
-	}
-	this.consumers = append(this.consumers, consumer)
-	return nil
-}
+// const Latest = sarama.OffsetNewest
+const Earliest = sarama.OffsetOldest
 
-func NewConsumer(zk string, groupid string, topic string, listener func(topic string, msg []byte) error, errorhandler func(err error, consumer *Consumer)) (consumer *Consumer, err error) {
-	consumer = &Consumer{groupId: groupid, zkUrl: zk, topic: topic, listener: listener, errorhandler: errorhandler}
+func NewConsumer(ctx context.Context, wg *sync.WaitGroup, kafkaBootstrap string, topics []string, groupId string, offset int64, listener func(topic string, msg []byte, time time.Time) error, errorhandler func(err error, consumer *Consumer), debug bool) (consumer *Consumer, err error) {
+	consumer = &Consumer{ctx: ctx, wg: wg, kafkaBootstrap: kafkaBootstrap, topics: topics, listener: listener, errorhandler: errorhandler, offset: offset, ready: make(chan bool), groupId: groupId, debug: debug}
 	err = consumer.start()
+	if err != nil {
+		go func(err2 error) {
+			for err2 != nil {
+				time.Sleep(10 * time.Second)
+				err2 = consumer.start()
+				if err2 != nil {
+					log.Println("WARN: Consumer still not ready:", err2)
+				} else {
+					log.Println("Consumer initiated successfully")
+				}
+			}
+		}(err)
+	}
 	return
 }
 
 type Consumer struct {
-	count        int
-	zkUrl        string
-	groupId      string
-	topic        string
-	ctx          context.Context
-	cancel       context.CancelFunc
-	listener     func(topic string, msg []byte) error
-	errorhandler func(err error, consumer *Consumer)
-	mux          sync.Mutex
-}
-
-func (this *Consumer) Stop() {
-	this.cancel()
+	count          int
+	kafkaBootstrap string
+	topics         []string
+	ctx            context.Context
+	wg             *sync.WaitGroup
+	listener       func(topic string, msg []byte, time time.Time) error
+	errorhandler   func(err error, consumer *Consumer)
+	mux            sync.Mutex
+	offset         int64
+	groupId        string
+	ready          chan bool
+	debug          bool
 }
 
 func (this *Consumer) start() error {
-	log.Println("DEBUG: consume topic: \"" + this.topic + "\"")
-	this.ctx, this.cancel = context.WithCancel(context.Background())
-	broker, err := GetBroker(this.zkUrl)
+	config := sarama.NewConfig()
+	config.Consumer.Offsets.Initial = this.offset
+
+	client, err := sarama.NewConsumerGroup(strings.Split(this.kafkaBootstrap, ","), this.groupId, config)
 	if err != nil {
-		log.Println("ERROR: unable to get broker list", err)
 		return err
 	}
-	err = InitTopic(this.zkUrl, this.topic)
-	if err != nil {
-		log.Println("ERROR: unable to create topic", err)
-		return err
-	}
-	r := kafka.NewReader(kafka.ReaderConfig{
-		CommitInterval: 0, //synchronous commits
-		Brokers:        broker,
-		GroupID:        this.groupId,
-		Topic:          this.topic,
-		MaxWait:        1 * time.Second,
-		Logger:         log.New(ioutil.Discard, "", 0),
-		ErrorLogger:    log.New(ioutil.Discard, "", 0),
-	})
+
 	go func() {
 		for {
 			select {
 			case <-this.ctx.Done():
-				log.Println("close kafka reader ", this.topic)
+				log.Println("close kafka reader")
 				return
 			default:
-				m, err := r.FetchMessage(this.ctx)
-				if err == io.EOF || err == context.Canceled {
-					log.Println("close consumer for topic ", this.topic)
+				if err := client.Consume(this.ctx, this.topics, this); err != nil {
+					log.Panicf("Error from consumer: %v", err)
+				}
+				// check if context was cancelled, signaling that the consumer should stop
+				if this.ctx.Err() != nil {
 					return
 				}
-				if err != nil {
-					log.Println("ERROR: while consuming topic ", this.topic, err)
-					this.errorhandler(err, this)
-					return
-				}
-				err = this.listener(m.Topic, m.Value)
-				if err != nil {
-					log.Println("ERROR: unable to handle message (no commit)", err)
-				} else {
-					err = r.CommitMessages(this.ctx, m)
-				}
+				this.ready = make(chan bool)
 			}
 		}
 	}()
+
+	<-this.ready // Await till the consumer has been set up
+	log.Println("Kafka consumer up and running...")
+
 	return err
 }
 
-func (this *Consumer) Restart() {
-	this.Stop()
-	this.start()
+func (this *Consumer) Setup(sarama.ConsumerGroupSession) error {
+	// Mark the consumer as ready
+	close(this.ready)
+	this.wg.Add(1)
+	return nil
+}
+
+// Cleanup is run at the end of a session, once all ConsumeClaim goroutines have exited
+func (this *Consumer) Cleanup(sarama.ConsumerGroupSession) error {
+	log.Println("Cleaned up kafka session")
+	this.wg.Done()
+	return nil
+}
+
+// ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
+func (this *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for message := range claim.Messages() {
+		select {
+		case <-this.ctx.Done():
+			log.Println("Ignoring queued kafka messages for faster shutdown")
+			return nil
+		default:
+			if this.debug {
+				log.Println(message.Topic, message.Timestamp, string(message.Value))
+			}
+			err := this.listener(message.Topic, message.Value, message.Timestamp)
+			if err != nil {
+				this.errorhandler(err, this)
+			}
+			session.MarkMessage(message, "")
+		}
+	}
+
+	return nil
 }
