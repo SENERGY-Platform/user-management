@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package main
+package ctrl
+
+import "github.com/SENERGY-Platform/user-management/pkg/configuration"
 
 type Role struct {
 	Id          string `json:"id"`
@@ -25,7 +27,7 @@ type Role struct {
 	ContainerId string `json:"containerId"`
 }
 
-func GetRoles(conf Config) (roles []Role, err error) {
+func GetRoles(conf configuration.Config) (roles []Role, err error) {
 	token, err := EnsureAccess(conf)
 	if err != nil {
 		return

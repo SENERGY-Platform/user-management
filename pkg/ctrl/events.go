@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package main
+package ctrl
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/user-management/kafka"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/kafka"
 	"log"
 	"sync"
 	"time"
@@ -33,11 +34,11 @@ type UserCommandMsg struct {
 }
 
 type EventHandler struct {
-	conf Config
+	conf configuration.Config
 	conn kafka.Interface
 }
 
-func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf Config) (handler *EventHandler, err error) {
+func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.Config) (handler *EventHandler, err error) {
 	conn, err := kafka.Init(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.Debug)
 	if err != nil {
 		log.Println("WARN: problem initializing kafka connection: ", err)

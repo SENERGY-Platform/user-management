@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package main
+package api
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/SmartEnergyPlatform/jwt-http-router"
-	"github.com/SmartEnergyPlatform/util/http/cors"
-	"github.com/SmartEnergyPlatform/util/http/logger"
-	"github.com/SmartEnergyPlatform/util/http/response"
+	"github.com/SENERGY-Platform/user-management/pkg/api/util"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
+	"github.com/julienschmidt/httprouter"
 	"io"
 	"log"
 	"net/http"
@@ -30,14 +30,14 @@ import (
 )
 
 type api struct {
-	eventHandler *EventHandler
-	conf         Config
+	eventHandler *ctrl.EventHandler
+	conf         configuration.Config
 }
 
-func StartApi(ctx context.Context, conf Config) (wg *sync.WaitGroup, err error) {
+func Start(ctx context.Context, conf configuration.Config) (wg *sync.WaitGroup, err error) {
 	wg = &sync.WaitGroup{}
 
-	eventHandler, err := InitEventConn(ctx, wg, conf)
+	eventHandler, err := ctrl.InitEventConn(ctx, wg, conf)
 	if err != nil {
 		return
 	}
@@ -47,91 +47,107 @@ func StartApi(ctx context.Context, conf Config) (wg *sync.WaitGroup, err error) 
 	}
 	log.Println("start server on port: ", conf.ServerPort)
 	httpHandler := apiInstance.getRoutes()
-	corseHandler := cors.New(httpHandler)
-	logg := logger.New(corseHandler, conf.LogLevel)
+	corsHandler := util.NewCors(httpHandler)
+	logg := util.NewLogger(corsHandler, conf.LogLevel)
 	go func() { log.Println(http.ListenAndServe(":"+conf.ServerPort, logg)) }()
 	return
 }
 
-func (api *api) getRoutes() (router *jwt_http_router.Router) {
-	router = jwt_http_router.New(jwt_http_router.JwtConfig{
-		ForceUser: api.conf.ForceUser == "true",
-		ForceAuth: api.conf.ForceAuth == "true",
-		PubRsa:    api.conf.JwtPubRsa,
-	})
+func (api *api) getRoutes() (router *httprouter.Router) {
+	router = httprouter.New()
 
-	router.GET("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.GET("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
-		user, err := GetUserById(id, api.conf)
+		user, err := ctrl.GetUserById(id, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		response.To(res).Json(user)
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode(user)
 	})
 
-	router.DELETE("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.DELETE("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
-		if jwt.UserId != id && !isAdmin(jwt) {
-			log.Println("DEBUG: ", jwt.RealmAccess.Roles, jwt.ResourceAccess)
-			http.Error(res, "access denied", http.StatusUnauthorized)
+		token, err := GetParsedToken(r)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err := api.eventHandler.DeleteUser(id)
+		if token.GetUserId() != id && !token.IsAdmin() {
+			http.Error(res, "access denied", http.StatusForbidden)
+			return
+		}
+		err = api.eventHandler.DeleteUser(id)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusPreconditionFailed)
 			return
 		}
-		response.To(res).Json("ok")
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode("ok")
 	})
 
-	router.DELETE("/user", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		err := api.eventHandler.DeleteUser(jwt.UserId)
+	router.DELETE("/user", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		token, err := GetParsedToken(r)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		err = api.eventHandler.DeleteUser(token.GetUserId())
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusPreconditionFailed)
 			return
 		}
-		response.To(res).Json("ok")
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode("ok")
 	})
 
-	router.GET("/user/id/:id/name", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.GET("/user/id/:id/name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
-		user, err := GetUserById(id, api.conf)
+		user, err := ctrl.GetUserById(id, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		response.To(res).Json(user.Name)
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode(user.Name)
 	})
 
-	router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		name := ps.ByName("name")
-		user, err := GetUserByName(name, api.conf)
+		user, err := ctrl.GetUserByName(name, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		response.To(res).Json(user)
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode(user)
 	})
 
-	router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		name := ps.ByName("name")
-		user, err := GetUserByName(name, api.conf)
+		user, err := ctrl.GetUserByName(name, api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		response.To(res).Json(user.Id)
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode(user.Id)
 	})
 
-	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		token, err := EnsureAccess(api.conf)
+	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		usertoken, err := GetParsedToken(r)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		token, err := ctrl.EnsureAccess(api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		var result interface{}
-		err = token.GetJSON(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+jwt.UserId+"/sessions", &result)
+		err = token.GetJSON(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+usertoken.GetUserId()+"/sessions", &result)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
@@ -144,15 +160,20 @@ func (api *api) getRoutes() (router *jwt_http_router.Router) {
 		}
 	})
 
-	router.PUT("/password", func(res http.ResponseWriter, request *http.Request, params jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.PUT("/password", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		usertoken, err := GetParsedToken(request)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
 		passwordRequest := PasswordRequest{}
-		err := json.NewDecoder(request.Body).Decode(&passwordRequest)
+		err = json.NewDecoder(request.Body).Decode(&passwordRequest)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		token, err := EnsureAccess(api.conf)
+		token, err := ctrl.EnsureAccess(api.conf)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -172,7 +193,7 @@ func (api *api) getRoutes() (router *jwt_http_router.Router) {
 				return
 			}
 		}()
-		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+jwt.UserId+"/reset-password", "application/json", r)
+		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+usertoken.GetUserId()+"/reset-password", "application/json", r)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -185,15 +206,20 @@ func (api *api) getRoutes() (router *jwt_http_router.Router) {
 		}
 	})
 
-	router.PUT("/info", func(res http.ResponseWriter, request *http.Request, params jwt_http_router.Params, jwt jwt_http_router.Jwt) {
+	router.PUT("/info", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		usertoken, err := GetParsedToken(request)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
 		infoRequest := UserInfoRequest{}
-		err := json.NewDecoder(request.Body).Decode(&infoRequest)
+		err = json.NewDecoder(request.Body).Decode(&infoRequest)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		token, err := EnsureAccess(api.conf)
+		token, err := ctrl.EnsureAccess(api.conf)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -213,7 +239,7 @@ func (api *api) getRoutes() (router *jwt_http_router.Router) {
 				return
 			}
 		}()
-		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+jwt.UserId, "application/json", r)
+		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+usertoken.GetUserId(), "application/json", r)
 		if err != nil {
 			log.Println("ERROR:", err)
 			http.Error(res, err.Error(), http.StatusInternalServerError)
@@ -226,25 +252,16 @@ func (api *api) getRoutes() (router *jwt_http_router.Router) {
 		}
 	})
 
-	router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps jwt_http_router.Params, jwt jwt_http_router.Jwt) {
-		roles, err := GetRoles(api.conf)
+	router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		roles, err := ctrl.GetRoles(api.conf)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		response.To(res).Json(roles)
+		json.NewEncoder(res).Encode(roles)
 	})
 
 	return
-}
-
-func isAdmin(jwt jwt_http_router.Jwt) bool {
-	for _, role := range jwt.RealmAccess.Roles {
-		if role == "admin" {
-			return true
-		}
-	}
-	return false
 }
 
 type PasswordRequest struct {

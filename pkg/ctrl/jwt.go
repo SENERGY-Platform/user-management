@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package main
+package ctrl
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"io"
 	"log"
 	"net/http"
@@ -187,7 +188,7 @@ type OpenidToken struct {
 
 var openid *OpenidToken
 
-func EnsureAccess(conf Config) (token JwtImpersonate, err error) {
+func EnsureAccess(conf configuration.Config) (token JwtImpersonate, err error) {
 	if openid == nil {
 		openid = &OpenidToken{}
 	}
@@ -219,7 +220,7 @@ func EnsureAccess(conf Config) (token JwtImpersonate, err error) {
 	return
 }
 
-func getOpenidToken(token *OpenidToken, conf Config) (err error) {
+func getOpenidToken(token *OpenidToken, conf configuration.Config) (err error) {
 	requesttime := time.Now()
 	resp, err := http.PostForm(conf.KeycloakUrl+"/auth/realms/"+conf.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
 		"client_id":     {conf.AuthClientId},
@@ -243,7 +244,7 @@ func getOpenidToken(token *OpenidToken, conf Config) (err error) {
 	return
 }
 
-func refreshOpenidToken(token *OpenidToken, conf Config) (err error) {
+func refreshOpenidToken(token *OpenidToken, conf configuration.Config) (err error) {
 	requesttime := time.Now()
 	resp, err := http.PostForm(conf.KeycloakUrl+"/auth/realms/"+conf.KeycloakRealm+"/protocol/openid-connect/token", url.Values{
 		"client_id":     {conf.AuthClientId},

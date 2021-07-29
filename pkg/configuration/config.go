@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package main
+package configuration
 
 import (
 	"encoding/json"
@@ -36,10 +36,6 @@ type Config struct {
 	AuthClientId             string
 	AuthClientSecret         string
 	AuthExpirationTimeBuffer float64
-
-	JwtPubRsa string
-	ForceUser string
-	ForceAuth string
 
 	UserTopic      string
 	KafkaBootstrap string

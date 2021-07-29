@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package main
+package ctrl
 
 import (
 	"errors"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"log"
 	"net/http"
 	"net/url"
@@ -29,7 +30,7 @@ type User struct {
 	Attributes map[string]interface{} `json:"attributes"`
 }
 
-func GetUserByName(name string, conf Config) (user User, err error) {
+func GetUserByName(name string, conf configuration.Config) (user User, err error) {
 	token, err := EnsureAccess(conf)
 	if err != nil {
 		return user, err
@@ -61,7 +62,7 @@ func filterExact(users []User, name string) (result []User) {
 	return
 }
 
-func GetUserById(id string, conf Config) (user User, err error) {
+func GetUserById(id string, conf configuration.Config) (user User, err error) {
 	token, err := EnsureAccess(conf)
 	if err != nil {
 		return user, err
@@ -70,7 +71,7 @@ func GetUserById(id string, conf Config) (user User, err error) {
 	return
 }
 
-func DeleteKeycloakUser(id string, conf Config) (err error) {
+func DeleteKeycloakUser(id string, conf configuration.Config) (err error) {
 	token, err := EnsureAccess(conf)
 	if err != nil {
 		log.Println("ERROR: unable to ensure access", err)

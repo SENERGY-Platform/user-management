@@ -19,6 +19,8 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/SENERGY-Platform/user-management/pkg/api"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"log"
 	"os"
 	"os/signal"
@@ -31,13 +33,13 @@ func main() {
 	configLocation := flag.String("config", "config.json", "configuration file")
 	flag.Parse()
 
-	conf, err := Load(*configLocation)
+	conf, err := configuration.Load(*configLocation)
 	if err != nil {
 		log.Fatal("ERROR: unable to load config", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	wg, err := StartApi(ctx, conf)
+	wg, err := api.Start(ctx, conf)
 	if err != nil {
 		cancel()
 		if wg != nil {
