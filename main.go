@@ -38,8 +38,6 @@ func main() {
 		log.Fatal("ERROR: unable to load config", err)
 	}
 
-	time.Sleep(10 * time.Second) //wait for routing
-
 	ctx, cancel := context.WithCancel(context.Background())
 	wg, err := api.Start(ctx, conf)
 	if err != nil {
