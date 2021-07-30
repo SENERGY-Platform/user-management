@@ -34,22 +34,25 @@ type UserCommandMsg struct {
 }
 
 type EventHandler struct {
-	conf configuration.Config
-	conn kafka.Interface
+	conf          configuration.Config
+	usersProducer *kafka.Producer
 }
 
 func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.Config) (handler *EventHandler, err error) {
-	conn, err := kafka.Init(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.Debug)
-	if err != nil {
-		log.Println("WARN: problem initializing kafka connection: ", err)
-		log.Println("WARN: client will retry until successful")
-	}
 	handler = &EventHandler{
 		conf: conf,
-		conn: conn,
 	}
-	log.Println("init permissions handler")
-	err = conn.Consume(conf.UserTopic, handler.handleUserCommand)
+
+	log.Println("init producer")
+	handler.usersProducer, err = kafka.NewProducer(conf.KafkaBootstrap, conf.UserTopic, conf.Debug)
+	if err != nil {
+		return handler, err
+	}
+
+	log.Println("init consumer")
+	_, err = kafka.NewConsumer(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.UserTopic, handler.handleUserCommand, func(err error, c *kafka.Consumer) {
+		log.Println("ERROR: Encountered error on consumer", err.Error())
+	})
 	if err != nil {
 		log.Println("WARN: problem initializing kafka connection: ", err)
 		log.Println("WARN: client will retry until successful")
@@ -58,13 +61,13 @@ func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.C
 	return
 }
 
-func (handler *EventHandler) sendEvent(topic string, key string, command interface{}) error {
+func (handler *EventHandler) sendUsersEvent(key string, command interface{}) error {
 	payload, err := json.Marshal(command)
 	if err != nil {
 		log.Println("ERROR: event marshaling:", err)
 		return err
 	}
-	return handler.conn.Publish(topic, key, payload)
+	return handler.usersProducer.Produce([]byte(key), payload)
 }
 
 func (handler *EventHandler) DeleteUser(id string) error {
@@ -75,7 +78,7 @@ func (handler *EventHandler) DeleteUser(id string) error {
 	if user.Id != id {
 		return errors.New("no matching user found")
 	}
-	return handler.sendEvent(handler.conf.UserTopic, "DELETE_"+id, UserCommandMsg{
+	return handler.sendUsersEvent("DELETE_"+id, UserCommandMsg{
 		Command: "DELETE",
 		Id:      id,
 	})
