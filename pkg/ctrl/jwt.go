@@ -21,9 +21,11 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/golang-jwt/jwt"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"net/url"
@@ -85,6 +87,35 @@ func (this JwtImpersonate) Put(url string, contentType string, body io.Reader) (
 
 func (this JwtImpersonate) Delete(url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", string(this))
+
+	resp, err = http.DefaultClient.Do(req)
+
+	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
+		err = errors.New("access denied")
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		err = errors.New("not found")
+	}
+	if err != nil {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		resp.Body.Close()
+		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
+	}
+	return
+}
+
+func (this JwtImpersonate) DeleteWithBody(url string, body interface{}) (resp *http.Response, err error) {
+	b := new(bytes.Buffer)
+	err = json.NewEncoder(b).Encode(body)
+	if err != nil {
+		return
+	}
+	req, err := http.NewRequest("DELETE", url, b)
 	if err != nil {
 		return nil, err
 	}
@@ -266,4 +297,67 @@ func refreshOpenidToken(token *OpenidToken, conf configuration.Config) (err erro
 	err = json.NewDecoder(resp.Body).Decode(token)
 	token.RequestTime = requesttime
 	return
+}
+
+type Token struct {
+	Token       string      `json:"-"`
+	Sub         string      `json:"sub,omitempty"`
+	RealmAccess RealmAccess `json:"realm_access,omitempty"`
+}
+
+type RealmAccess struct {
+	Roles []string `json:"roles"`
+}
+
+func (this *Token) IsAdmin() bool {
+	return contains(this.RealmAccess.Roles, "admin")
+}
+
+func (this *Token) GetUserId() string {
+	return this.Sub
+}
+
+func (this *Token) Impersonate() JwtImpersonate {
+	return JwtImpersonate(this.Token)
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+type KeycloakClaims struct {
+	RealmAccess RealmAccess `json:"realm_access"`
+	jwt.StandardClaims
+}
+
+func CreateToken(issuer string, userId string) (token Token, err error) {
+	return CreateTokenWithRoles(issuer, userId, []string{})
+}
+
+func CreateTokenWithRoles(issuer string, userId string, roles []string) (token Token, err error) {
+	realmAccess := RealmAccess{Roles: roles}
+	claims := KeycloakClaims{
+		realmAccess,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(10 * time.Minute).Unix(),
+			Issuer:    issuer,
+			Subject:   userId,
+		},
+	}
+
+	jwtoken := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	unsignedTokenString, err := jwtoken.SigningString()
+	if err != nil {
+		return token, err
+	}
+	tokenString := strings.Join([]string{unsignedTokenString, ""}, ".")
+	token.Token = "Bearer " + tokenString
+	token.Sub = userId
+	token.RealmAccess = realmAccess
+	return token, nil
 }

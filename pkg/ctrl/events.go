@@ -93,7 +93,7 @@ func (handler *EventHandler) handleUserCommand(_ string, msg []byte, _ time.Time
 	}
 	switch command.Command {
 	case "DELETE":
-		return DeleteKeycloakUser(command.Id, handler.conf)
+		return DeleteUser(command.Id, handler.conf)
 	}
 	return errors.New("unable to handle permission command: " + string(msg))
 }

@@ -37,10 +37,13 @@ type Config struct {
 	AuthClientSecret         string
 	AuthExpirationTimeBuffer float64
 
-	UserTopic      string
-	KafkaBootstrap string
-	ConsumerGroup  string
-	Debug          bool
+	UserTopic           string
+	KafkaBootstrap      string
+	ConsumerGroup       string
+	Debug               bool
+	WaitingRoomUrl      string
+	ProcessSchedulerUrl string
+	DashboardServiceUrl string
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)

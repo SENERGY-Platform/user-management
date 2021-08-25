@@ -15,5 +15,9 @@
 	"ZookeeperUrl": "zk:2181",
 	"UserTopic": "user",
 	"ConsumerGroup": "users",
-	"Debug": false
+	"Debug": false,
+
+	"WaitingRoomUrl": "",
+	"ProcessSchedulerUrl": "",
+	"DashboardServiceUrl": ""
 }
