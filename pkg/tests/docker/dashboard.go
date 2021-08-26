@@ -34,6 +34,7 @@ func Dashboard(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPor
 	}()
 	hostPort = container.GetPort("8080/tcp")
 	ipAddress = container.Container.NetworkSettings.IPAddress
+	go Dockerlog(pool, ctx, container, "DASHBOARD")
 	err = pool.Retry(func() error {
 		log.Println("try dashboard connection...")
 		_, err := http.Get("http://" + ipAddress + ":8080/dashboards")

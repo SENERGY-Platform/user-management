@@ -71,7 +71,7 @@ func (this *Consumer) start() error {
 			select {
 			case <-this.ctx.Done():
 				log.Println("close kafka reader ", this.topic)
-				r.Close()
+				log.Println("kafka reader closed", this.topic, r.Close())
 				this.wg.Done()
 				return
 			default:

@@ -30,7 +30,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-	wrIp, _, err := WaitingRoom(ctx, wg, "mongodb://"+wrDbIp+":27017")
+	_, wrIp, err := WaitingRoom(ctx, wg, "mongodb://"+wrDbIp+":27017")
 	if err != nil {
 		return config, err
 	}
@@ -40,7 +40,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-	psIp, _, err := ProcessScheduler(ctx, wg, "mongodb://"+psDbIp+":27017")
+	_, psIp, err := ProcessScheduler(ctx, wg, "mongodb://"+psDbIp+":27017")
 	if err != nil {
 		return config, err
 	}
@@ -50,7 +50,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-	dIp, _, err := Dashboard(ctx, wg, dDbIp)
+	_, dIp, err := Dashboard(ctx, wg, dDbIp)
 	if err != nil {
 		return config, err
 	}

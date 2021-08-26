@@ -57,12 +57,12 @@ func getBatchOfWaitingRoomDeviceIds(token Token, config configuration.Config, li
 	query.Add("limit", strconv.Itoa(limit))
 	query.Add("offset", strconv.Itoa(offset))
 	query.Add("show_hidden", "true")
-	temp := []IdWrapper{}
+	temp := WaitingRoomListIdWrapper{}
 	err = token.Impersonate().GetJSON(config.WaitingRoomUrl+"/devices?"+query.Encode(), &temp)
 	if err != nil {
 		return ids, err
 	}
-	for _, element := range temp {
+	for _, element := range temp.Result {
 		ids = append(ids, element.Id)
 	}
 	return ids, err

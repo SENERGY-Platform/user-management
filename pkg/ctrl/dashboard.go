@@ -32,14 +32,14 @@ func deleteDashboard(token Token, conf configuration.Config, id string) error {
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		temp, _ := io.ReadAll(resp.Body)
-		return errors.New("deleteProcessSchedule(): " + string(temp))
+		return errors.New("deleteDashboard(): " + string(temp))
 	}
 	return nil
 }
 
 func getDashboardIds(token Token, config configuration.Config) (ids []string, err error) {
 	temp := []IdWrapper{}
-	err = token.Impersonate().GetJSON(config.DashboardServiceUrl+"/dashboard", &temp)
+	err = token.Impersonate().GetJSON(config.DashboardServiceUrl+"/dashboards", &temp)
 	if err != nil {
 		return ids, err
 	}

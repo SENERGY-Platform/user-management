@@ -13,20 +13,35 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 	}
 	err = DeleteWaitingRoomUser(token, conf)
 	if err != nil {
+		log.Println("ERROR: DeleteWaitingRoomUser()", err)
 		return err
 	}
 	err = DeleteDashboardUser(token, conf)
 	if err != nil {
+		log.Println("ERROR: DeleteDashboardUser()", err)
 		return err
 	}
 	err = DeleteProcessSchedulerUser(token, conf)
 	if err != nil {
+		log.Println("ERROR: DeleteProcessSchedulerUser()", err)
 		return err
 	}
 	err = DeleteKeycloakUser(userId, conf)
-	return err
+	if err != nil {
+		log.Println("ERROR: DeleteKeycloakUser()", err)
+		return err
+	}
+	return nil
 }
 
 type IdWrapper struct {
 	Id string `json:"id"`
+}
+
+type WaitingRoomListIdWrapper struct {
+	Result []WaitingRoomIdWrapper `json:"result"`
+}
+
+type WaitingRoomIdWrapper struct {
+	Id string `json:"local_id"`
 }

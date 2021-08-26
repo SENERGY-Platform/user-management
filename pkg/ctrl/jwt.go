@@ -25,6 +25,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -33,23 +34,35 @@ import (
 	"io/ioutil"
 )
 
-type JwtImpersonate string
+type JwtImpersonate struct {
+	Token   string
+	XUserId string
+}
 
 func (this JwtImpersonate) Post(url string, contentType string, body io.Reader) (resp *http.Response, err error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", string(this))
+	req.Header.Set("Authorization", this.Token)
 	req.Header.Set("Content-Type", contentType)
+	if this.XUserId != "" {
+		req.Header.Set("X-UserId", this.XUserId)
+	}
 
 	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
 
 	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 		err = errors.New("access denied")
 	}
 	if resp.StatusCode == http.StatusNotFound {
 		err = errors.New("not found")
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		err = errors.New("internal server error")
 	}
 	if err != nil {
 		buf := new(bytes.Buffer)
@@ -65,16 +78,24 @@ func (this JwtImpersonate) Put(url string, contentType string, body io.Reader) (
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", string(this))
+	req.Header.Set("Authorization", this.Token)
 	req.Header.Set("Content-Type", contentType)
+	if this.XUserId != "" {
+		req.Header.Set("X-UserId", this.XUserId)
+	}
 
 	resp, err = http.DefaultClient.Do(req)
-
+	if err != nil {
+		return
+	}
 	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 		err = errors.New("access denied")
 	}
 	if resp.StatusCode == http.StatusNotFound {
 		err = errors.New("not found")
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		err = errors.New("internal server error")
 	}
 	if err != nil {
 		buf := new(bytes.Buffer)
@@ -90,15 +111,24 @@ func (this JwtImpersonate) Delete(url string) (resp *http.Response, err error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", string(this))
+	req.Header.Set("Authorization", this.Token)
+	if this.XUserId != "" {
+		req.Header.Set("X-UserId", this.XUserId)
+	}
 
 	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
 
 	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 		err = errors.New("access denied")
 	}
 	if resp.StatusCode == http.StatusNotFound {
 		err = errors.New("not found")
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		err = errors.New("internal server error")
 	}
 	if err != nil {
 		buf := new(bytes.Buffer)
@@ -119,15 +149,24 @@ func (this JwtImpersonate) DeleteWithBody(url string, body interface{}) (resp *h
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", string(this))
+	req.Header.Set("Authorization", this.Token)
+	if this.XUserId != "" {
+		req.Header.Set("X-UserId", this.XUserId)
+	}
 
 	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
 
 	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 		err = errors.New("access denied")
 	}
 	if resp.StatusCode == http.StatusNotFound {
 		err = errors.New("not found")
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		err = errors.New("internal server error")
 	}
 	if err != nil {
 		buf := new(bytes.Buffer)
@@ -177,14 +216,23 @@ func (this JwtImpersonate) Get(url string) (resp *http.Response, err error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", string(this))
+	req.Header.Set("Authorization", this.Token)
+	if this.XUserId != "" {
+		req.Header.Set("X-UserId", this.XUserId)
+	}
 	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
 
 	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 		err = errors.New("access denied")
 	}
 	if resp.StatusCode == http.StatusNotFound {
 		err = errors.New("not found")
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		err = errors.New("internal server error")
 	}
 	if err != nil {
 		buf := new(bytes.Buffer)
@@ -226,7 +274,7 @@ func EnsureAccess(conf configuration.Config) (token JwtImpersonate, err error) {
 	duration := time.Now().Sub(openid.RequestTime).Seconds()
 
 	if openid.AccessToken != "" && openid.ExpiresIn-conf.AuthExpirationTimeBuffer > duration {
-		token = JwtImpersonate("Bearer " + openid.AccessToken)
+		token = JwtImpersonate{Token: "Bearer " + openid.AccessToken}
 		return
 	}
 
@@ -236,7 +284,7 @@ func EnsureAccess(conf configuration.Config) (token JwtImpersonate, err error) {
 		if err != nil {
 			log.Println("WARNING: unable to use refreshtoken", err)
 		} else {
-			token = JwtImpersonate("Bearer " + openid.AccessToken)
+			token = JwtImpersonate{Token: "Bearer " + openid.AccessToken}
 			return
 		}
 	}
@@ -247,7 +295,7 @@ func EnsureAccess(conf configuration.Config) (token JwtImpersonate, err error) {
 		log.Println("ERROR: unable to get new access token", err)
 		openid = &OpenidToken{}
 	}
-	token = JwtImpersonate("Bearer " + openid.AccessToken)
+	token = JwtImpersonate{Token: "Bearer " + openid.AccessToken}
 	return
 }
 
@@ -260,6 +308,7 @@ func getOpenidToken(token *OpenidToken, conf configuration.Config) (err error) {
 	})
 
 	if err != nil {
+		debug.PrintStack()
 		log.Println("ERROR: getOpenidToken::PostForm()", err)
 		return err
 	}
@@ -310,7 +359,7 @@ type RealmAccess struct {
 }
 
 func (this *Token) IsAdmin() bool {
-	return contains(this.RealmAccess.Roles, "admin")
+	return Contains(this.RealmAccess.Roles, "admin")
 }
 
 func (this *Token) GetUserId() string {
@@ -318,10 +367,10 @@ func (this *Token) GetUserId() string {
 }
 
 func (this *Token) Impersonate() JwtImpersonate {
-	return JwtImpersonate(this.Token)
+	return JwtImpersonate{Token: this.Token, XUserId: this.Sub}
 }
 
-func contains(s []string, e string) bool {
+func Contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
 			return true
