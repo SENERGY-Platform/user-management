@@ -45,14 +45,6 @@ func TestUserDelete(t *testing.T) {
 		return
 	}
 
-	/*
-		defer log.Println("api closed")
-		defer wg2.Wait()
-		defer log.Println("wait for api close")
-		defer apicancel()
-		defer log.Println("cancel api")
-	*/
-
 	user1, err := ctrl.CreateToken("test", "user1")
 	if err != nil {
 		t.Error(err)
@@ -66,12 +58,16 @@ func TestUserDelete(t *testing.T) {
 
 	scheduleIds := []string{}
 	dashboardIds := []string{}
+	importIds := []string{}
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
 		t.Run("init scheduler state", initSchedulerState(config, user1, user2, &scheduleIds))
 		t.Run("init dashboard state", initDashboardState(config, user1, user2, &dashboardIds))
+		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
 	})
+
+	time.Sleep(60 * time.Second)
 
 	t.Run("remove user1", func(t *testing.T) {
 		users := &kafka.Writer{
@@ -102,12 +98,13 @@ func TestUserDelete(t *testing.T) {
 		}
 	})
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 
 	t.Run("check states after delete", func(t *testing.T) {
 		t.Run("check waiting room state", checkWaitingRoomState(config, user1, user2))
 		t.Run("check scheduler state", checkSchedulerState(config, user1, user2, scheduleIds))
 		t.Run("check dashboard state", checkDashboardState(config, user1, user2, dashboardIds))
+		t.Run("check imports state", checkImportsState(config, user1, user2, importIds))
 	})
 }
 
@@ -191,6 +188,52 @@ func initSchedulerState(config configuration.Config, user1 ctrl.Token, user2 ctr
 			return
 		}
 		*schedulerIds = append(*schedulerIds, temp.Id)
+	}
+}
+
+func initImportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
+	return func(t *testing.T) {
+		temp := ctrl.IdWrapper{}
+		err := user1.Impersonate().PostJSON(
+			config.ImportsDeploymentUrl+"/instances",
+			map[string]interface{}{
+				"name":           "1",
+				"import_type_id": "1",
+				"image":          "docker.io/library/hello-world",
+			}, &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+
+		temp = ctrl.IdWrapper{}
+		err = user1.Impersonate().PostJSON(
+			config.ImportsDeploymentUrl+"/instances",
+			map[string]interface{}{
+				"name":           "2",
+				"import_type_id": "2",
+				"image":          "docker.io/library/hello-world",
+			}, &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+
+		temp = ctrl.IdWrapper{}
+		err = user2.Impersonate().PostJSON(
+			config.ImportsDeploymentUrl+"/instances",
+			map[string]interface{}{
+				"name":           "3",
+				"import_type_id": "3",
+				"image":          "docker.io/library/hello-world",
+			}, &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
 	}
 }
 
@@ -282,6 +325,7 @@ func checkWaitingRoomState(config configuration.Config, user1 ctrl.Token, user2 
 		}
 		if len(temp.Result) != 2 {
 			t.Error(temp)
+			return
 		}
 		if temp.Result[0].Id != "3" || temp.Result[1].Id != "4" {
 			t.Error(temp)
@@ -312,6 +356,38 @@ func checkSchedulerState(config configuration.Config, user1 ctrl.Token, user2 ct
 		}
 		if len(temp) != 1 {
 			t.Error(temp)
+			return
+		}
+		if temp[0].Id != ids[2] {
+			t.Error(temp)
+		}
+	}
+}
+
+func checkImportsState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		if len(ids) != 3 {
+			t.Error(ids)
+		}
+		temp := []ctrl.IdWrapper{}
+		err := user1.Impersonate().GetJSON(config.ImportsDeploymentUrl+"/instances", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp) != 0 {
+			t.Error(temp)
+		}
+
+		temp = []ctrl.IdWrapper{}
+		err = user2.Impersonate().GetJSON(config.ImportsDeploymentUrl+"/instances", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp) != 1 {
+			t.Error(temp)
+			return
 		}
 		if temp[0].Id != ids[2] {
 			t.Error(temp)
@@ -345,6 +421,7 @@ func checkDashboardState(config configuration.Config, user1 ctrl.Token, user2 ct
 		}
 		if len(temp) != 1 {
 			t.Error(temp)
+			return
 		}
 		if temp[0].Id != ids[2] {
 			t.Error(temp, ids)

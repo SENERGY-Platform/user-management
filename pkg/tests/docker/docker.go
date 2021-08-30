@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/tests/mocks"
 	"sync"
 )
 
@@ -55,6 +56,27 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, err
 	}
 	config.DashboardServiceUrl = "http://" + dIp + ":8080"
+
+	_, importsDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	importsDbUrl := "mongodb://" + importsDbIp + ":27017"
+	permissionsUrl, err := LocalUrlToDockerUrl(mocks.PermissionsMock(ctx, wg))
+	if err != nil {
+		return config, err
+	}
+	importRepoUrl, err := LocalUrlToDockerUrl(mocks.ImportsRepoMock(ctx, wg))
+	if err != nil {
+		return config, err
+	}
+
+	_, importsIp, err := Imports(ctx, wg, importsDbUrl, importRepoUrl, permissionsUrl, config.KafkaBootstrap)
+	if err != nil {
+		return config, err
+	}
+
+	config.ImportsDeploymentUrl = "http://" + importsIp + ":8080"
 
 	return config, nil
 }

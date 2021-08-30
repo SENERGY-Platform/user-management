@@ -2,12 +2,14 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"log"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func getFreePort() (int, error) {
@@ -55,4 +57,30 @@ type LogWriter struct {
 func (this *LogWriter) Write(p []byte) (n int, err error) {
 	this.logger.Print(string(p))
 	return len(p), nil
+}
+
+func GetHostIp() (string, error) {
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		return "", err
+	}
+	networks, _ := pool.Client.ListNetworks()
+	for _, network := range networks {
+		if network.Name == "bridge" {
+			return network.IPAM.Config[0].Gateway, nil
+		}
+	}
+	return "", errors.New("no bridge network found")
+}
+
+//transform local-address to address in docker container
+func LocalUrlToDockerUrl(localUrl string) (dockerUrl string, err error) {
+	hostIp, err := GetHostIp()
+	if err != nil {
+		return "", err
+	}
+	urlStruct := strings.Split(localUrl, ":")
+	dockerUrl = "http://" + hostIp + ":" + urlStruct[len(urlStruct)-1]
+	log.Println("DEBUG: url transformation:", localUrl, "-->", dockerUrl)
+	return
 }
