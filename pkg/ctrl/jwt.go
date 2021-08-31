@@ -248,11 +248,16 @@ func (this JwtImpersonate) GetJSON(url string, result interface{}) (err error) {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	payload, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 	err = json.Unmarshal(payload, result)
+	if err != nil {
+		log.Println("ERROR:", string(payload))
+		debug.PrintStack()
+	}
 	return
 }
 

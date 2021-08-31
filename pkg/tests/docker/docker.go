@@ -75,8 +75,19 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-
 	config.ImportsDeploymentUrl = "http://" + importsIp + ":8080"
+
+	_, brokerExportsDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	brokerExportsDbUrl := "mongodb://" + brokerExportsDbIp + ":27017"
+
+	_, brokerExportsIp, err := BrokerExports(ctx, wg, brokerExportsDbUrl)
+	if err != nil {
+		return config, err
+	}
+	config.BrokerExportsUrl = "http://" + brokerExportsIp + ":8080"
 
 	return config, nil
 }

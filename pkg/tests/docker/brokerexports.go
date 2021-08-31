@@ -9,23 +9,22 @@ import (
 	"sync"
 )
 
-func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string) (hostPort string, ipAddress string, err error) {
+func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		return "", "", err
 	}
 	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "ghcr.io/senergy-platform/import-deploy",
+		Repository: "ghcr.io/senergy-platform/kafka2mqtt-manager",
 		Tag:        "dev",
 		Env: []string{
 			"MONGO_URL=" + mongoUrl,
 			"MONGO_REPL_SET=false",
-			"IMPORT_REPO_URL=" + importRepoUrl,
-			"PERMISSIONS_URL=" + permissionsUrl,
-			"KAFKA_BOOTSTRAP=" + kafkaUrl,
 			"DEPLOY_MODE=docker",
 			"DEBUG=true",
 			"DOCKER_PULL=true",
+			"VERIFY_INPUT=false",
+			"TRANSFER_IMAGE=docker.io/library/hello-world",
 		},
 		Mounts: []string{
 			"/var/run/docker.sock:/var/run/docker.sock",
@@ -43,10 +42,10 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 		wg.Done()
 	}()
 	hostPort = container.GetPort("8080/tcp")
-	go Dockerlog(pool, ctx, container, "IMPORT_DEPLOY")
+	go Dockerlog(pool, ctx, container, "BROKER-EXPORT")
 	ipAddress = container.Container.NetworkSettings.IPAddress
 	err = pool.Retry(func() error {
-		log.Println("try Imports connection...")
+		log.Println("try BrokerExports connection...")
 		_, err := http.Get("http://" + ipAddress + ":8080/instances")
 		return err
 	})

@@ -59,23 +59,26 @@ func TestUserDelete(t *testing.T) {
 	scheduleIds := []string{}
 	dashboardIds := []string{}
 	importIds := []string{}
+	brokerExportsIds := []string{}
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
 		t.Run("init scheduler state", initSchedulerState(config, user1, user2, &scheduleIds))
 		t.Run("init dashboard state", initDashboardState(config, user1, user2, &dashboardIds))
 		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
+		t.Run("init broker exports state", initBrokerExportState(config, user1, user2, &brokerExportsIds))
 	})
 
-	time.Sleep(60 * time.Second)
+	time.Sleep(30 * time.Second)
+
+	users := &kafka.Writer{
+		Addr:        kafka.TCP(config.KafkaBootstrap),
+		Topic:       config.UserTopic,
+		MaxAttempts: 10,
+		Logger:      log.New(os.Stdout, "[TEST-KAFKA-PRODUCER] ", 0),
+	}
 
 	t.Run("remove user1", func(t *testing.T) {
-		users := &kafka.Writer{
-			Addr:        kafka.TCP(config.KafkaBootstrap),
-			Topic:       config.UserTopic,
-			MaxAttempts: 10,
-			Logger:      log.New(os.Stdout, "[TEST-KAFKA-PRODUCER] ", 0),
-		}
 		cmd := ctrl.UserCommandMsg{
 			Command: "DELETE",
 			Id:      user1.GetUserId(),
@@ -105,7 +108,32 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check scheduler state", checkSchedulerState(config, user1, user2, scheduleIds))
 		t.Run("check dashboard state", checkDashboardState(config, user1, user2, dashboardIds))
 		t.Run("check imports state", checkImportsState(config, user1, user2, importIds))
+		t.Run("check broker exports state", checkBrokerExportsState(config, user1, user2, brokerExportsIds))
 	})
+
+	t.Run("remove user2 for cleanup", func(t *testing.T) {
+		cmd := ctrl.UserCommandMsg{
+			Command: "DELETE",
+			Id:      user2.GetUserId(),
+		}
+		message, err := json.Marshal(cmd)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		err = users.WriteMessages(
+			context.Background(),
+			kafka.Message{
+				Key:   []byte(user2.GetUserId()),
+				Value: message,
+				Time:  time.Now(),
+			},
+		)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+	time.Sleep(30 * time.Second)
 }
 
 func initWaitingRoomState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token) func(t *testing.T) {
@@ -229,6 +257,51 @@ func initImportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.T
 				"import_type_id": "3",
 				"image":          "docker.io/library/hello-world",
 			}, &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+	}
+}
+
+func getBrokerExportElement(name string) map[string]interface{} {
+	return map[string]interface{}{
+		"name":       name,
+		"FilterType": "deviceId",
+		"Filter":     name,
+	}
+}
+
+func initBrokerExportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
+	return func(t *testing.T) {
+		temp := ctrl.ExportIdWrapper{}
+		err := user1.Impersonate().PostJSON(
+			config.BrokerExportsUrl+"/instances",
+			getBrokerExportElement("1"),
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+
+		temp = ctrl.ExportIdWrapper{}
+		err = user1.Impersonate().PostJSON(
+			config.BrokerExportsUrl+"/instances",
+			getBrokerExportElement("2"),
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+
+		temp = ctrl.ExportIdWrapper{}
+		err = user2.Impersonate().PostJSON(
+			config.BrokerExportsUrl+"/instances",
+			getBrokerExportElement("3"),
+			&temp)
 		if err != nil {
 			t.Error(err)
 			return
@@ -390,6 +463,37 @@ func checkImportsState(config configuration.Config, user1 ctrl.Token, user2 ctrl
 			return
 		}
 		if temp[0].Id != ids[2] {
+			t.Error(temp)
+		}
+	}
+}
+
+func checkBrokerExportsState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		if len(ids) != 3 {
+			t.Error(ids)
+		}
+		temp := ctrl.ExportListIdWrapper{}
+		err := user1.Impersonate().GetJSON(config.BrokerExportsUrl+"/instances", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp.Instances) != 0 {
+			t.Error(temp)
+		}
+
+		temp = ctrl.ExportListIdWrapper{}
+		err = user2.Impersonate().GetJSON(config.BrokerExportsUrl+"/instances", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp.Instances) != 1 {
+			t.Error(temp)
+			return
+		}
+		if temp.Instances[0].Id != ids[2] {
 			t.Error(temp)
 		}
 	}

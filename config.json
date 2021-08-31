@@ -20,5 +20,6 @@
 	"WaitingRoomUrl": "",
 	"ProcessSchedulerUrl": "",
 	"DashboardServiceUrl": "",
-	"ImportsDeploymentUrl": ""
+	"ImportsDeploymentUrl": "",
+	"BrokerExportsUrl": ""
 }

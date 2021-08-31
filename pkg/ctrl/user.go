@@ -43,6 +43,14 @@ type IdWrapper struct {
 	Id string `json:"id"`
 }
 
+type ExportListIdWrapper struct {
+	Instances []ExportIdWrapper `json:"instances"`
+}
+
+type ExportIdWrapper struct {
+	Id string `json:"ID"`
+}
+
 type WaitingRoomListIdWrapper struct {
 	Result []WaitingRoomIdWrapper `json:"result"`
 }

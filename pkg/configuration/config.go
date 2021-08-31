@@ -45,6 +45,7 @@ type Config struct {
 	ProcessSchedulerUrl  string
 	DashboardServiceUrl  string
 	ImportsDeploymentUrl string
+	BrokerExportsUrl     string
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
