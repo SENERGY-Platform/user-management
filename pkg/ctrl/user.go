@@ -28,7 +28,12 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 	}
 	err = DeleteImportsUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteProcessSchedulerUser()", err)
+		log.Println("ERROR: DeleteImportsUser()", err)
+		return err
+	}
+	err = DeleteBrokerExportsUser(token, conf)
+	if err != nil {
+		log.Println("ERROR: DeleteBrokerExportsUser()", err)
 		return err
 	}
 	err = DeleteKeycloakUser(userId, conf)
