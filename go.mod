@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.12.2 // indirect

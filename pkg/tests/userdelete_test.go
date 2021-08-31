@@ -60,6 +60,7 @@ func TestUserDelete(t *testing.T) {
 	dashboardIds := []string{}
 	importIds := []string{}
 	brokerExportsIds := []string{}
+	dbExportsIds := []string{}
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
@@ -67,6 +68,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("init dashboard state", initDashboardState(config, user1, user2, &dashboardIds))
 		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
 		t.Run("init broker exports state", initBrokerExportState(config, user1, user2, &brokerExportsIds))
+		t.Run("init database exports state", initDatabaseExportState(config, user1, user2, &dbExportsIds))
 	})
 
 	time.Sleep(30 * time.Second)
@@ -109,6 +111,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check dashboard state", checkDashboardState(config, user1, user2, dashboardIds))
 		t.Run("check imports state", checkImportsState(config, user1, user2, importIds))
 		t.Run("check broker exports state", checkBrokerExportsState(config, user1, user2, brokerExportsIds))
+		t.Run("check database exports state", checkDatabaseExportsState(config, user1, user2, dbExportsIds))
 	})
 
 	t.Run("remove user2 for cleanup", func(t *testing.T) {
@@ -267,9 +270,21 @@ func initImportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.T
 
 func getBrokerExportElement(name string) map[string]interface{} {
 	return map[string]interface{}{
-		"name":       name,
+		"Name":       name,
 		"FilterType": "deviceId",
 		"Filter":     name,
+	}
+}
+
+func getDbExportElement(name string) map[string]interface{} {
+	return map[string]interface{}{
+		"Name":        name,
+		"FilterType":  "deviceId",
+		"Filter":      name,
+		"EntityName":  name,
+		"ServiceName": name,
+		"Topic":       name,
+		"Offset":      "foo",
 	}
 }
 
@@ -301,6 +316,43 @@ func initBrokerExportState(config configuration.Config, user1 ctrl.Token, user2 
 		err = user2.Impersonate().PostJSON(
 			config.BrokerExportsUrl+"/instances",
 			getBrokerExportElement("3"),
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+	}
+}
+
+func initDatabaseExportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
+	return func(t *testing.T) {
+		temp := ctrl.ExportIdWrapper{}
+		err := user1.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/instance",
+			getDbExportElement("1"),
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+
+		temp = ctrl.ExportIdWrapper{}
+		err = user1.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/instance",
+			getDbExportElement("2"),
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*ids = append(*ids, temp.Id)
+
+		temp = ctrl.ExportIdWrapper{}
+		err = user2.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/instance",
+			getDbExportElement("3"),
 			&temp)
 		if err != nil {
 			t.Error(err)
@@ -485,6 +537,37 @@ func checkBrokerExportsState(config configuration.Config, user1 ctrl.Token, user
 
 		temp = ctrl.ExportListIdWrapper{}
 		err = user2.Impersonate().GetJSON(config.BrokerExportsUrl+"/instances", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp.Instances) != 1 {
+			t.Error(temp)
+			return
+		}
+		if temp.Instances[0].Id != ids[2] {
+			t.Error(temp)
+		}
+	}
+}
+
+func checkDatabaseExportsState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		if len(ids) != 3 {
+			t.Error(ids)
+		}
+		temp := ctrl.ExportListIdWrapper{}
+		err := user1.Impersonate().GetJSON(config.DatabaseExportsUrl+"/instance", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp.Instances) != 0 {
+			t.Error(temp)
+		}
+
+		temp = ctrl.ExportListIdWrapper{}
+		err = user2.Impersonate().GetJSON(config.DatabaseExportsUrl+"/instance", &temp)
 		if err != nil {
 			t.Error(err)
 			return

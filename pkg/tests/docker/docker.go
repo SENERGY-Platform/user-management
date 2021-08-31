@@ -89,5 +89,19 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.BrokerExportsUrl = "http://" + brokerExportsIp + ":8080"
 
+	_, dbExportsDbIp, err := MysqlContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	rancherUrl, err := LocalUrlToDockerUrl(mocks.RancherMock(ctx, wg))
+	if err != nil {
+		return config, err
+	}
+	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsUrl)
+	if err != nil {
+		return config, err
+	}
+	config.DatabaseExportsUrl = "http://" + dbExportsIp + ":8080"
+
 	return config, nil
 }

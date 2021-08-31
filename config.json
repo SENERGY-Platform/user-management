@@ -21,5 +21,6 @@
 	"ProcessSchedulerUrl": "",
 	"DashboardServiceUrl": "",
 	"ImportsDeploymentUrl": "",
-	"BrokerExportsUrl": ""
+	"BrokerExportsUrl": "",
+	"DatabaseExportsUrl": ""
 }

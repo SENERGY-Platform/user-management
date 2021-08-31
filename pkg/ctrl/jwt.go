@@ -55,20 +55,11 @@ func (this JwtImpersonate) Post(url string, contentType string, body io.Reader) 
 		return
 	}
 
-	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
-		err = errors.New("access denied")
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		err = errors.New("not found")
-	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		err = errors.New("internal server error")
-	}
-	if err != nil {
+	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
+		err = errors.New(buf.String())
 		resp.Body.Close()
-		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
 	}
 	return
 }
@@ -88,20 +79,11 @@ func (this JwtImpersonate) Put(url string, contentType string, body io.Reader) (
 	if err != nil {
 		return
 	}
-	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
-		err = errors.New("access denied")
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		err = errors.New("not found")
-	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		err = errors.New("internal server error")
-	}
-	if err != nil {
+	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
+		err = errors.New(buf.String())
 		resp.Body.Close()
-		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
 	}
 	return
 }
@@ -121,20 +103,11 @@ func (this JwtImpersonate) Delete(url string) (resp *http.Response, err error) {
 		return
 	}
 
-	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
-		err = errors.New("access denied")
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		err = errors.New("not found")
-	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		err = errors.New("internal server error")
-	}
-	if err != nil {
+	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
+		err = errors.New(buf.String())
 		resp.Body.Close()
-		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
 	}
 	return
 }
@@ -159,20 +132,11 @@ func (this JwtImpersonate) DeleteWithBody(url string, body interface{}) (resp *h
 		return
 	}
 
-	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
-		err = errors.New("access denied")
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		err = errors.New("not found")
-	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		err = errors.New("internal server error")
-	}
-	if err != nil {
+	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
+		err = errors.New(buf.String())
 		resp.Body.Close()
-		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
 	}
 	return
 }
@@ -225,20 +189,11 @@ func (this JwtImpersonate) Get(url string) (resp *http.Response, err error) {
 		return
 	}
 
-	if err == nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
-		err = errors.New("access denied")
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		err = errors.New("not found")
-	}
-	if resp.StatusCode == http.StatusInternalServerError {
-		err = errors.New("internal server error")
-	}
-	if err != nil {
+	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
+		err = errors.New(buf.String())
 		resp.Body.Close()
-		log.Println("DEBUG: ", url, resp.Status, resp.StatusCode, buf.String())
 	}
 	return
 }
