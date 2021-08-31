@@ -230,7 +230,7 @@ func initImportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.T
 			map[string]interface{}{
 				"name":           "1",
 				"import_type_id": "1",
-				"image":          "docker.io/library/hello-world",
+				"image":          "ghcr.io/senergy-platform/hello-world:test",
 			}, &temp)
 		if err != nil {
 			t.Error(err)
@@ -244,7 +244,7 @@ func initImportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.T
 			map[string]interface{}{
 				"name":           "2",
 				"import_type_id": "2",
-				"image":          "docker.io/library/hello-world",
+				"image":          "ghcr.io/senergy-platform/hello-world:test",
 			}, &temp)
 		if err != nil {
 			t.Error(err)
@@ -258,7 +258,7 @@ func initImportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.T
 			map[string]interface{}{
 				"name":           "3",
 				"import_type_id": "3",
-				"image":          "docker.io/library/hello-world",
+				"image":          "ghcr.io/senergy-platform/hello-world:test",
 			}, &temp)
 		if err != nil {
 			t.Error(err)

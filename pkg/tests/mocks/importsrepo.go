@@ -21,7 +21,7 @@ func ImportsRepoMock(ctx context.Context, wg *sync.WaitGroup) (url string) {
 				json.NewEncoder(writer).Encode(map[string]interface{}{
 					"id":    id,
 					"name":  id,
-					"image": "docker.io/library/hello-world",
+					"image": "ghcr.io/senergy-platform/hello-world:test",
 				})
 			}
 		})},

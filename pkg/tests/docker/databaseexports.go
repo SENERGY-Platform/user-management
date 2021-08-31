@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, rancherUrl string, permSearchUrl string) (hostPort string, ipAddress string, err error) {
+func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, rancherUrl string, permSearchUrl string, influxDbHost string) (hostPort string, ipAddress string, err error) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		return "", "", err
@@ -24,12 +24,13 @@ func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, 
 			"MYSQL_DB=mysql",
 			"DOCKER_PULL=true",
 			"DRIVER=rancher2",
-			"TRANSFER_IMAGE=docker.io/library/hello-world",
+			"TRANSFER_IMAGE=ghcr.io/senergy-platform/hello-world:test",
 			"RANCHER2_ENDPOINT=" + rancherUrl + "/",
 			"RANCHER_ACCESS_KEY=foo",
 			"RANCHER_SECRET_KEY=bar",
 			"PERMISSION_API_ENDPOINT=" + permSearchUrl,
 			"API_PORT=8080",
+			"INFLUX_DB_HOST=" + influxDbHost,
 		},
 	}, func(config *docker.HostConfig) {
 	})

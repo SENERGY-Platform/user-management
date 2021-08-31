@@ -97,7 +97,11 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsUrl)
+	_, influxIp, err := InfluxdbContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsUrl, influxIp)
 	if err != nil {
 		return config, err
 	}

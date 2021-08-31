@@ -40,7 +40,7 @@ func DeleteImportsUser(token Token, conf configuration.Config) error {
 }
 
 func deleteImport(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().DeleteWithBody(conf.ImportsDeploymentUrl+"/instances/"+url.QueryEscape(id), nil)
+	resp, err := token.Impersonate().Delete(conf.ImportsDeploymentUrl + "/instances/" + url.QueryEscape(id))
 	if err != nil {
 		return err
 	}

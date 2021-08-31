@@ -24,7 +24,7 @@ func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (ho
 			"DEBUG=true",
 			"DOCKER_PULL=true",
 			"VERIFY_INPUT=false",
-			"TRANSFER_IMAGE=docker.io/library/hello-world",
+			"TRANSFER_IMAGE=ghcr.io/senergy-platform/hello-world:test",
 		},
 		Mounts: []string{
 			"/var/run/docker.sock:/var/run/docker.sock",
