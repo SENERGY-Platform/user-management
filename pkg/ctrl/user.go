@@ -26,6 +26,11 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 		log.Println("ERROR: DeleteProcessSchedulerUser()", err)
 		return err
 	}
+	err = DeleteImportsUser(token, conf)
+	if err != nil {
+		log.Println("ERROR: DeleteProcessSchedulerUser()", err)
+		return err
+	}
 	err = DeleteKeycloakUser(userId, conf)
 	if err != nil {
 		log.Println("ERROR: DeleteKeycloakUser()", err)
