@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string) (hostPort string, ipAddress string, err error) {
+func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		return "", "", err
@@ -23,12 +23,12 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 			"IMPORT_REPO_URL=" + importRepoUrl,
 			"PERMISSIONS_URL=" + permissionsUrl,
 			"KAFKA_BOOTSTRAP=" + kafkaUrl,
-			"DEPLOY_MODE=docker",
 			"DEBUG=true",
 			"DOCKER_PULL=true",
-		},
-		Mounts: []string{
-			"/var/run/docker.sock:/var/run/docker.sock",
+			"DEPLOY_MODE=rancher2",
+			"RANCHER_URL=" + rancherUrl + "/",
+			"RANCHER_ACCESS_KEY=foo",
+			"RANCHER_SECRET_KEY=bar",
 		},
 	}, func(config *docker.HostConfig) {
 	})

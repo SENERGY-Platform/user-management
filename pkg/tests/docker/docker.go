@@ -70,8 +70,12 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
+	rancherUrl, err := LocalUrlToDockerUrl(mocks.RancherMock(ctx, wg))
+	if err != nil {
+		return config, err
+	}
 
-	_, importsIp, err := Imports(ctx, wg, importsDbUrl, importRepoUrl, permissionsUrl, config.KafkaBootstrap)
+	_, importsIp, err := Imports(ctx, wg, importsDbUrl, importRepoUrl, permissionsUrl, config.KafkaBootstrap, rancherUrl)
 	if err != nil {
 		return config, err
 	}
@@ -83,17 +87,13 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	brokerExportsDbUrl := "mongodb://" + brokerExportsDbIp + ":27017"
 
-	_, brokerExportsIp, err := BrokerExports(ctx, wg, brokerExportsDbUrl)
+	_, brokerExportsIp, err := BrokerExports(ctx, wg, brokerExportsDbUrl, rancherUrl)
 	if err != nil {
 		return config, err
 	}
 	config.BrokerExportsUrl = "http://" + brokerExportsIp + ":8080"
 
 	_, dbExportsDbIp, err := MysqlContainer(ctx, wg)
-	if err != nil {
-		return config, err
-	}
-	rancherUrl, err := LocalUrlToDockerUrl(mocks.RancherMock(ctx, wg))
 	if err != nil {
 		return config, err
 	}

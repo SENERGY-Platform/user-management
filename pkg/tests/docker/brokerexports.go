@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
+func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
 	pool, err := dockertest.NewPool("")
 	if err != nil {
 		return "", "", err
@@ -20,14 +20,14 @@ func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (ho
 		Env: []string{
 			"MONGO_URL=" + mongoUrl,
 			"MONGO_REPL_SET=false",
-			"DEPLOY_MODE=docker",
 			"DEBUG=true",
 			"DOCKER_PULL=true",
 			"VERIFY_INPUT=false",
 			"TRANSFER_IMAGE=ghcr.io/senergy-platform/hello-world:test",
-		},
-		Mounts: []string{
-			"/var/run/docker.sock:/var/run/docker.sock",
+			"DEPLOY_MODE=rancher2",
+			"RANCHER_URL=" + rancherUrl + "/",
+			"RANCHER_ACCESS_KEY=foo",
+			"RANCHER_SECRET_KEY=bar",
 		},
 	}, func(config *docker.HostConfig) {
 	})

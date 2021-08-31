@@ -113,30 +113,6 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check broker exports state", checkBrokerExportsState(config, user1, user2, brokerExportsIds))
 		t.Run("check database exports state", checkDatabaseExportsState(config, user1, user2, dbExportsIds))
 	})
-
-	t.Run("remove user2 for cleanup", func(t *testing.T) {
-		cmd := ctrl.UserCommandMsg{
-			Command: "DELETE",
-			Id:      user2.GetUserId(),
-		}
-		message, err := json.Marshal(cmd)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		err = users.WriteMessages(
-			context.Background(),
-			kafka.Message{
-				Key:   []byte(user2.GetUserId()),
-				Value: message,
-				Time:  time.Now(),
-			},
-		)
-		if err != nil {
-			t.Error(err)
-		}
-	})
-	time.Sleep(30 * time.Second)
 }
 
 func initWaitingRoomState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token) func(t *testing.T) {
