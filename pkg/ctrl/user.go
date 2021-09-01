@@ -67,6 +67,11 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 		log.Println("ERROR: DeleteAnalyticsFlowRepoUser()", err)
 		return err
 	}
+	err = DeleteAnalyticsFlowEngineUser(token, conf)
+	if err != nil {
+		log.Println("ERROR: DeleteAnalyticsFlowEngineUser()", err)
+		return err
+	}
 	err = DeleteKeycloakUser(userId, conf)
 	if err != nil {
 		log.Println("ERROR: DeleteKeycloakUser()", err)
