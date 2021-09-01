@@ -23,5 +23,7 @@
 	"ImportsDeploymentUrl": "",
 	"BrokerExportsUrl": "",
 	"DatabaseExportsUrl": "",
-	"AnalyticsOperatorRepoUrl": ""
+	"AnalyticsOperatorRepoUrl": "",
+	"AnalyticsPipelineUrl": "",
+	"AnalyticsFlowEngineUrl": ""
 }

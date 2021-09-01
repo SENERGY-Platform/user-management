@@ -84,6 +84,7 @@ func TestUserDelete(t *testing.T) {
 	dbExportsIds := []string{}
 	operatorIds := []string{}
 	flowIds := []string{}
+	flowEngineIds := []string{}
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
@@ -94,6 +95,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("init database exports state", initDatabaseExportState(config, user1, user2, &dbExportsIds))
 		t.Run("init operators state", initOperatorState(config, user1, user2, &operatorIds))
 		t.Run("init flow state", initFlowState(config, user1, user2, &flowIds))
+		t.Run("init flow engine state", initFlowEngineState(config, user1, user2, &flowEngineIds))
 	})
 
 	time.Sleep(30 * time.Second)
@@ -139,5 +141,6 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check database exports state", checkDatabaseExportsState(config, user1, user2, dbExportsIds))
 		t.Run("check operators state", checkOperatorState(config, user1, user2, operatorIds))
 		t.Run("check flows state", checkFlowState(config, user1, user2, flowIds))
+		t.Run("check flows engine state", checkFlowEngineState(config, user1, user2, flowEngineIds))
 	})
 }

@@ -49,6 +49,8 @@ type Config struct {
 	DatabaseExportsUrl       string
 	AnalyticsOperatorRepoUrl string
 	AnalyticsFlowRepoUrl     string
+	AnalyticsFlowEngineUrl   string
+	AnalyticsPipelineUrl     string
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)

@@ -143,5 +143,25 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.AnalyticsFlowRepoUrl = "http://" + flowIp + ":5000"
 
+	_, pipelineDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	_, pipelineIp, err := AnalyticsPipeline(ctx, wg, pipelineDbIp)
+	if err != nil {
+		return config, err
+	}
+	config.AnalyticsPipelineUrl = "http://" + pipelineIp + ":8000"
+
+	parserMockUrl, err := LocalUrlToDockerUrl(mocks.AnalyticsParserMock(ctx, wg))
+	if err != nil {
+		return config, err
+	}
+
+	_, engineIp, err := AnalyticsFlowEngine(ctx, wg, config.AnalyticsPipelineUrl, parserMockUrl, rancherUrl)
+	if err != nil {
+		return config, err
+	}
+	config.AnalyticsFlowEngineUrl = "http://" + engineIp + ":8000"
 	return config, nil
 }
