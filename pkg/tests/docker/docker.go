@@ -133,5 +133,15 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.AnalyticsOperatorRepoUrl = "http://" + operatorIp + ":5000"
 
+	_, flowDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	_, flowIp, err := AnalyticsFlowRepo(ctx, wg, flowDbIp)
+	if err != nil {
+		return config, err
+	}
+	config.AnalyticsFlowRepoUrl = "http://" + flowIp + ":5000"
+
 	return config, nil
 }
