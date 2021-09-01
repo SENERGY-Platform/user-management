@@ -56,14 +56,16 @@ func DeleteWaitingRoomUser(token Token, conf configuration.Config) error {
 }
 
 func deleteBatchOfWaitingRoomDevices(token Token, conf configuration.Config, ids []string) error {
-	resp, err := token.Impersonate().DeleteWithBody(conf.WaitingRoomUrl+"/devices", ids)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		temp, _ := io.ReadAll(resp.Body)
-		return errors.New("deleteBatchOfWaitingRoomDevices(): " + string(temp))
+	if len(ids) > 0 {
+		resp, err := token.Impersonate().DeleteWithBody(conf.WaitingRoomUrl+"/devices", ids)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			temp, _ := io.ReadAll(resp.Body)
+			return errors.New("deleteBatchOfWaitingRoomDevices(): " + string(temp))
+		}
 	}
 	return nil
 }
@@ -82,4 +84,12 @@ func getBatchOfWaitingRoomDeviceIds(token Token, config configuration.Config, li
 		ids = append(ids, element.Id)
 	}
 	return ids, err
+}
+
+type WaitingRoomListIdWrapper struct {
+	Result []WaitingRoomIdWrapper `json:"result"`
+}
+
+type WaitingRoomIdWrapper struct {
+	Id string `json:"local_id"`
 }

@@ -123,6 +123,7 @@ func (this JwtImpersonate) DeleteWithBody(url string, body interface{}) (resp *h
 		return nil, err
 	}
 	req.Header.Set("Authorization", this.Token)
+	req.Header.Set("Content-Type", "application/json")
 	if this.XUserId != "" {
 		req.Header.Set("X-UserId", this.XUserId)
 	}

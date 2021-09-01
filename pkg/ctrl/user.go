@@ -57,6 +57,11 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 		log.Println("ERROR: DeleteDatabaseExportsUser()", err)
 		return err
 	}
+	err = DeleteAnalyticsOperatorRepoUser(token, conf)
+	if err != nil {
+		log.Println("ERROR: DeleteAnalyticsOperatorRepoUser()", err)
+		return err
+	}
 	err = DeleteKeycloakUser(userId, conf)
 	if err != nil {
 		log.Println("ERROR: DeleteKeycloakUser()", err)
@@ -77,10 +82,6 @@ type ExportIdWrapper struct {
 	Id string `json:"ID"`
 }
 
-type WaitingRoomListIdWrapper struct {
-	Result []WaitingRoomIdWrapper `json:"result"`
-}
-
-type WaitingRoomIdWrapper struct {
-	Id string `json:"local_id"`
+type UnderscoreIdWrapper struct {
+	Id string `json:"_id"`
 }

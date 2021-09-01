@@ -22,5 +22,6 @@
 	"DashboardServiceUrl": "",
 	"ImportsDeploymentUrl": "",
 	"BrokerExportsUrl": "",
-	"DatabaseExportsUrl": ""
+	"DatabaseExportsUrl": "",
+	"AnalyticsOperatorRepoUrl": ""
 }

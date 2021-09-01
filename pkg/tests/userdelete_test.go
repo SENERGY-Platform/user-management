@@ -32,6 +32,12 @@ import (
 )
 
 func TestUserDelete(t *testing.T) {
+	old := ctrl.BatchSize
+	ctrl.BatchSize = 1
+	defer func() {
+		ctrl.BatchSize = old
+	}()
+
 	config, err := configuration.Load("./../../config.json")
 	if err != nil {
 		t.Fatal("ERROR: unable to load config", err)
@@ -76,6 +82,7 @@ func TestUserDelete(t *testing.T) {
 	importIds := []string{}
 	brokerExportsIds := []string{}
 	dbExportsIds := []string{}
+	operatorIds := []string{}
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
@@ -84,6 +91,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
 		t.Run("init broker exports state", initBrokerExportState(config, user1, user2, &brokerExportsIds))
 		t.Run("init database exports state", initDatabaseExportState(config, user1, user2, &dbExportsIds))
+		t.Run("init operators state", initOperatorState(config, user1, user2, &operatorIds))
 	})
 
 	time.Sleep(30 * time.Second)
@@ -127,5 +135,6 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check imports state", checkImportsState(config, user1, user2, importIds))
 		t.Run("check broker exports state", checkBrokerExportsState(config, user1, user2, brokerExportsIds))
 		t.Run("check database exports state", checkDatabaseExportsState(config, user1, user2, dbExportsIds))
+		t.Run("check operators state", checkOperatorState(config, user1, user2, operatorIds))
 	})
 }

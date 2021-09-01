@@ -54,14 +54,16 @@ func DeleteDatabaseExportsUser(token Token, conf configuration.Config) error {
 }
 
 func deleteBatchOfDatabaseExports(token Token, conf configuration.Config, ids []string) error {
-	resp, err := token.Impersonate().DeleteWithBody(conf.DatabaseExportsUrl+"/instances", ids)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		temp, _ := io.ReadAll(resp.Body)
-		return errors.New("deleteBatchOfDatabaseExports(): " + string(temp))
+	if len(ids) > 0 {
+		resp, err := token.Impersonate().DeleteWithBody(conf.DatabaseExportsUrl+"/instances", ids)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			temp, _ := io.ReadAll(resp.Body)
+			return errors.New("deleteBatchOfDatabaseExports(): " + string(temp))
+		}
 	}
 	return nil
 }

@@ -123,5 +123,15 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.DatabaseExportsUrl = "http://" + dbExportsIp + ":8080"
 
+	_, operatorDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	_, operatorIp, err := AnalyticsOperatorRepo(ctx, wg, operatorDbIp)
+	if err != nil {
+		return config, err
+	}
+	config.AnalyticsOperatorRepoUrl = "http://" + operatorIp + ":5000"
+
 	return config, nil
 }
