@@ -51,6 +51,7 @@ type Config struct {
 	AnalyticsFlowRepoUrl     string
 	AnalyticsFlowEngineUrl   string
 	AnalyticsPipelineUrl     string
+	NotifierUrl              string
 }
 
 //loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)

@@ -163,5 +163,16 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, err
 	}
 	config.AnalyticsFlowEngineUrl = "http://" + engineIp + ":8000"
+
+	_, notifierDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+	_, notifierIp, err := NotificationContainer(ctx, wg, notifierDbIp)
+	if err != nil {
+		return config, err
+	}
+	config.NotifierUrl = "http://" + notifierIp + ":5000"
+
 	return config, nil
 }
