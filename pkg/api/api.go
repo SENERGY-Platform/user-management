@@ -48,7 +48,7 @@ func Start(ctx context.Context, conf configuration.Config) (wg *sync.WaitGroup, 
 	log.Println("start server on port: ", conf.ServerPort)
 	httpHandler := apiInstance.getRoutes()
 	corsHandler := util.NewCors(httpHandler)
-	logg := util.NewLogger(corsHandler, conf.LogLevel)
+	logg := util.NewLogger(corsHandler)
 	go func() { log.Println(http.ListenAndServe(":"+conf.ServerPort, logg)) }()
 	return
 }

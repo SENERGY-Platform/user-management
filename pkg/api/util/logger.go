@@ -17,54 +17,51 @@
 package util
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
-func NewLogger(handler http.Handler, logLevel string) *LoggerMiddleWare {
-	return &LoggerMiddleWare{handler: handler, logLevel: logLevel}
+func NewLogger(handler http.Handler) *LoggerMiddleWare {
+	return &LoggerMiddleWare{handler: handler}
 }
 
 type LoggerMiddleWare struct {
-	handler  http.Handler
-	logLevel string //DEBUG | CALL | NONE
+	handler http.Handler
 }
 
-func (this *LoggerMiddleWare) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	this.log(r)
+func (this *LoggerMiddleWare) ServeHTTP(w http.ResponseWriter, request *http.Request) {
+	response := &ResponseWriterWithStatusCodeLog{Parent: w, Status: 200}
+	now := time.Now()
+	defer this.log(request, response, now)
 	if this.handler != nil {
-		this.handler.ServeHTTP(w, r)
+		this.handler.ServeHTTP(response, request)
 	} else {
-		http.Error(w, "Forbidden", 403)
+		http.Error(response, "Forbidden", 403)
 	}
 }
 
-func (this *LoggerMiddleWare) log(request *http.Request) {
-	if this.logLevel != "NONE" {
-		method := request.Method
-		path := request.URL
+func (this *LoggerMiddleWare) log(request *http.Request, response *ResponseWriterWithStatusCodeLog, t time.Time) {
+	method := request.Method
+	path := request.URL
+	status := response.Status
+	log.Printf("[%v] %v %v %v\n", method, path, status, time.Since(t))
+}
 
-		if this.logLevel == "CALL" {
-			log.Printf("%v [%v] %v \n", request.RemoteAddr, method, path)
-		}
+type ResponseWriterWithStatusCodeLog struct {
+	Parent http.ResponseWriter
+	Status int
+}
 
-		if this.logLevel == "DEBUG" {
-			//read on request.Body would empty it -> create new ReadCloser for request.Body while reading
-			var buf bytes.Buffer
-			temp := io.TeeReader(request.Body, &buf)
-			b, err := ioutil.ReadAll(temp)
-			if err != nil {
-				log.Println("ERROR: read error in debuglog:", err)
-			}
-			request.Body = ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+func (this *ResponseWriterWithStatusCodeLog) Header() http.Header {
+	return this.Parent.Header()
+}
 
-			client := request.RemoteAddr
-			log.Printf("%v [%v] %v %v", client, method, path, string(b))
+func (this *ResponseWriterWithStatusCodeLog) Write(payload []byte) (int, error) {
+	return this.Parent.Write(payload)
+}
 
-		}
-
-	}
+func (this *ResponseWriterWithStatusCodeLog) WriteHeader(statusCode int) {
+	this.Status = statusCode
+	this.Parent.WriteHeader(statusCode)
 }

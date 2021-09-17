@@ -1,6 +1,5 @@
 {
 	"ServerPort":		          "8080",
-	"LogLevel":		              "CALL",
 
 	"ForceUser": "false",
 	"ForceAuth": "false",

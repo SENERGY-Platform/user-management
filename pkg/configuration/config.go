@@ -29,7 +29,6 @@ import (
 
 type Config struct {
 	ServerPort string
-	LogLevel   string
 
 	KeycloakUrl              string
 	KeycloakRealm            string
