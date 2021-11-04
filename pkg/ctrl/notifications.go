@@ -20,7 +20,6 @@ import (
 	"errors"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"io"
-	"net/url"
 )
 
 func DeleteNotificationUser(token Token, conf configuration.Config) error {
@@ -31,24 +30,37 @@ func DeleteNotificationUser(token Token, conf configuration.Config) error {
 	if err != nil {
 		return err
 	}
-	for _, id := range ids {
-		err = deleteNotification(token, conf, id)
-		if err != nil {
-			return err
-		}
+	err = deleteNotifications(token, conf, ids)
+	if err != nil {
+		return err
 	}
+
+	ids, err = getBrokerIds(token, conf)
+	if err != nil {
+		return err
+	}
+	err = deleteBrokers(token, conf, ids)
+	if err != nil {
+		return err
+	}
+
+	err = deletePlatformBrokerConfig(token, conf)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func deleteNotification(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.NotifierUrl + "/notifications/" + url.QueryEscape(id))
+func deleteNotifications(token Token, conf configuration.Config, ids []string) error {
+	resp, err := token.Impersonate().Delete(conf.NotifierUrl+"/notifications", ids)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		temp, _ := io.ReadAll(resp.Body)
-		return errors.New("deleteAnalyticsOperator(): " + string(temp))
+		return errors.New("deleteNotifications(): " + string(temp))
 	}
 	return nil
 }
@@ -66,6 +78,49 @@ func getNotificationIds(token Token, config configuration.Config) (ids []string,
 	return ids, err
 }
 
+func getBrokerIds(token Token, config configuration.Config) (ids []string, err error) {
+	temp := BrokerList{}
+	//limit=0 -> mongodb: all elements
+	err = token.Impersonate().GetJSON(config.NotifierUrl+"/brokers?limit=0&offset=0", &temp)
+	if err != nil {
+		return ids, err
+	}
+	for _, element := range temp.Brokers {
+		ids = append(ids, element.Id)
+	}
+	return ids, err
+}
+
+func deleteBrokers(token Token, conf configuration.Config, ids []string) error {
+	resp, err := token.Impersonate().Delete(conf.NotifierUrl+"/brokers", ids)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		temp, _ := io.ReadAll(resp.Body)
+		return errors.New("deleteBrokers(): " + string(temp))
+	}
+	return nil
+}
+
+func deletePlatformBrokerConfig(token Token, conf configuration.Config) error {
+	resp, err := token.Impersonate().Delete(conf.NotifierUrl+"/platform-broker", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		temp, _ := io.ReadAll(resp.Body)
+		return errors.New("deletePlatformBrokerConfig(): " + string(temp))
+	}
+	return nil
+}
+
 type NotificationList struct {
 	Notifications []UnderscoreIdWrapper `json:"notifications"`
+}
+
+type BrokerList struct {
+	Brokers []IdWrapper `json:"brokers"`
 }

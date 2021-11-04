@@ -86,6 +86,7 @@ func TestUserDelete(t *testing.T) {
 	flowIds := []string{}
 	flowEngineIds := []string{}
 	notificationIds := []string{}
+	brokerIds := []string{}
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
@@ -97,7 +98,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("init operators state", initOperatorState(config, user1, user2, &operatorIds))
 		t.Run("init flow state", initFlowState(config, user1, user2, &flowIds))
 		t.Run("init flow engine state", initFlowEngineState(config, user1, user2, &flowEngineIds))
-		t.Run("init notification state", initNotificationState(config, user1, user2, &notificationIds))
+		t.Run("init notification state", initNotificationState(config, user1, user2, &notificationIds, &brokerIds))
 	})
 
 	time.Sleep(30 * time.Second)
@@ -144,6 +145,6 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check operators state", checkOperatorState(config, user1, user2, operatorIds))
 		t.Run("check flows state", checkFlowState(config, user1, user2, flowIds))
 		t.Run("check flows engine state", checkFlowEngineState(config, user1, user2, flowEngineIds))
-		t.Run("check notification state", checkNotificationState(config, user1, user2, notificationIds))
+		t.Run("check notification state", checkNotificationState(config, user1, user2, notificationIds, brokerIds))
 	})
 }

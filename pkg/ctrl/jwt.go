@@ -88,10 +88,20 @@ func (this JwtImpersonate) Put(url string, contentType string, body io.Reader) (
 	return
 }
 
-func (this JwtImpersonate) Delete(url string) (resp *http.Response, err error) {
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return nil, err
+func (this JwtImpersonate) Delete(url string, body interface{}) (resp *http.Response, err error) {
+	var req *http.Request
+	if body != nil {
+		b := new(bytes.Buffer)
+		err = json.NewEncoder(b).Encode(body)
+		if err != nil {
+			return
+		}
+		req, err = http.NewRequest("DELETE", url, b)
+	} else {
+		req, err = http.NewRequest("DELETE", url, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 	req.Header.Set("Authorization", this.Token)
 	if this.XUserId != "" {

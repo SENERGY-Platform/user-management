@@ -56,7 +56,7 @@ func DeleteBrokerExportsUser(token Token, conf configuration.Config) error {
 }
 
 func deleteBrokerExport(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.BrokerExportsUrl + "/instances/" + url.QueryEscape(id))
+	resp, err := token.Impersonate().Delete(conf.BrokerExportsUrl+"/instances/"+url.QueryEscape(id), nil)
 	if err != nil {
 		return err
 	}

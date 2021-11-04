@@ -41,7 +41,7 @@ func DeleteProcessSchedulerUser(token Token, conf configuration.Config) error {
 }
 
 func deleteProcessSchedule(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.ProcessSchedulerUrl + "/schedules/" + url.QueryEscape(id))
+	resp, err := token.Impersonate().Delete(conf.ProcessSchedulerUrl+"/schedules/"+url.QueryEscape(id), nil)
 	if err != nil {
 		return err
 	}

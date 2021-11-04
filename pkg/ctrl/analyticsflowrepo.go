@@ -41,7 +41,7 @@ func DeleteAnalyticsFlowRepoUser(token Token, conf configuration.Config) error {
 }
 
 func deleteAnalyticsFlow(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.AnalyticsFlowRepoUrl + "/flow/" + url.QueryEscape(id))
+	resp, err := token.Impersonate().Delete(conf.AnalyticsFlowRepoUrl+"/flow/"+url.QueryEscape(id), nil)
 	if err != nil {
 		return err
 	}

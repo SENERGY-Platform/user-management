@@ -41,7 +41,7 @@ func DeleteDashboardUser(token Token, conf configuration.Config) error {
 }
 
 func deleteDashboard(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.DashboardServiceUrl + "/dashboard/" + url.QueryEscape(id))
+	resp, err := token.Impersonate().Delete(conf.DashboardServiceUrl+"/dashboard/"+url.QueryEscape(id), nil)
 	if err != nil {
 		return err
 	}

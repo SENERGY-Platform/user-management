@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-func initNotificationState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
+func initNotificationState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, notificationIds *[]string, brokerIds *[]string) func(t *testing.T) {
 	return func(t *testing.T) {
 		temp := ctrl.UnderscoreIdWrapper{}
 		err := user1.Impersonate().PutJSON(
@@ -36,7 +36,7 @@ func initNotificationState(config configuration.Config, user1 ctrl.Token, user2 
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
+		*notificationIds = append(*notificationIds, temp.Id)
 
 		temp = ctrl.UnderscoreIdWrapper{}
 		err = user1.Impersonate().PutJSON(
@@ -50,7 +50,7 @@ func initNotificationState(config configuration.Config, user1 ctrl.Token, user2 
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
+		*notificationIds = append(*notificationIds, temp.Id)
 
 		temp = ctrl.UnderscoreIdWrapper{}
 		err = user2.Impersonate().PutJSON(
@@ -64,14 +64,50 @@ func initNotificationState(config configuration.Config, user1 ctrl.Token, user2 
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
+		*notificationIds = append(*notificationIds, temp.Id)
+
+		tempB := ctrl.IdWrapper{}
+		err = user1.Impersonate().PostJSON(
+			config.NotifierUrl+"/brokers",
+			map[string]interface{}{
+				"address": "1",
+			}, &tempB)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*brokerIds = append(*brokerIds, tempB.Id)
+
+		tempB = ctrl.IdWrapper{}
+		err = user1.Impersonate().PostJSON(
+			config.NotifierUrl+"/brokers",
+			map[string]interface{}{
+				"address": "2",
+			}, &tempB)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*brokerIds = append(*brokerIds, tempB.Id)
+
+		tempB = ctrl.IdWrapper{}
+		err = user2.Impersonate().PostJSON(
+			config.NotifierUrl+"/brokers",
+			map[string]interface{}{
+				"address": "3",
+			}, &tempB)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*brokerIds = append(*brokerIds, tempB.Id)
 	}
 }
 
-func checkNotificationState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids []string) func(t *testing.T) {
+func checkNotificationState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, notificationIds []string, brokerIds []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		if len(ids) != 3 {
-			t.Error(ids)
+		if len(notificationIds) != 3 {
+			t.Error(notificationIds)
 			return
 		}
 		temp := ctrl.NotificationList{}
@@ -95,7 +131,32 @@ func checkNotificationState(config configuration.Config, user1 ctrl.Token, user2
 			t.Error(temp)
 			return
 		}
-		if temp.Notifications[0].Id != ids[2] {
+		if temp.Notifications[0].Id != notificationIds[2] {
+			t.Error(temp)
+		}
+
+		tempB := ctrl.BrokerList{}
+		err = user1.Impersonate().GetJSON(config.NotifierUrl+"/brokers?limit=0", &tempB)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(tempB.Brokers) != 0 {
+			t.Error(tempB)
+			return
+		}
+
+		tempB = ctrl.BrokerList{}
+		err = user2.Impersonate().GetJSON(config.NotifierUrl+"/brokers?limit=0", &tempB)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(tempB.Brokers) != 1 {
+			t.Error(temp)
+			return
+		}
+		if tempB.Brokers[0].Id != brokerIds[2] {
 			t.Error(temp)
 		}
 	}

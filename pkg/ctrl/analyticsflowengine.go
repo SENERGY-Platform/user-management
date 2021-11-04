@@ -41,7 +41,7 @@ func DeleteAnalyticsFlowEngineUser(token Token, conf configuration.Config) error
 }
 
 func deleteAnalyticsFlowEngine(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.AnalyticsFlowEngineUrl + "/pipeline/" + url.QueryEscape(id))
+	resp, err := token.Impersonate().Delete(conf.AnalyticsFlowEngineUrl+"/pipeline/"+url.QueryEscape(id), nil)
 	if err != nil {
 		return err
 	}

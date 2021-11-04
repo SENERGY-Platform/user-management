@@ -77,7 +77,7 @@ func DeleteKeycloakUser(id string, conf configuration.Config) (err error) {
 		log.Println("ERROR: unable to ensure access", err)
 		return err
 	}
-	resp, err := token.Delete(conf.KeycloakUrl + "/auth/admin/realms/" + conf.KeycloakRealm + "/users/" + url.QueryEscape(id))
+	resp, err := token.Delete(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users/"+url.QueryEscape(id), nil)
 	if err != nil || (resp != nil && resp.StatusCode == http.StatusNotFound) {
 		log.Println("WARNING: user dosnt exist; command will be ignored")
 		err = nil
