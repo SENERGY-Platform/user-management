@@ -74,7 +74,7 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 	}
 	err = DeleteNotificationUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteAnalyticsFlowEngineUser()", err)
+		log.Println("ERROR: DeleteNotificationUser()", err)
 		return err
 	}
 	err = DeleteKeycloakUser(userId, conf)

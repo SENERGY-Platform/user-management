@@ -53,6 +53,9 @@ func DeleteNotificationUser(token Token, conf configuration.Config) error {
 }
 
 func deleteNotifications(token Token, conf configuration.Config, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
 	resp, err := token.Impersonate().Delete(conf.NotifierUrl+"/notifications", ids)
 	if err != nil {
 		return err
@@ -92,6 +95,9 @@ func getBrokerIds(token Token, config configuration.Config) (ids []string, err e
 }
 
 func deleteBrokers(token Token, conf configuration.Config, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
 	resp, err := token.Impersonate().Delete(conf.NotifierUrl+"/brokers", ids)
 	if err != nil {
 		return err
