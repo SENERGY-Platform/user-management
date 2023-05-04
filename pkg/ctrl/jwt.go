@@ -58,7 +58,7 @@ func (this JwtImpersonate) Post(url string, contentType string, body io.Reader) 
 	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
-		err = errors.New(buf.String())
+		err = errors.New("unexpected status:" + resp.Status + " " + buf.String() + "\n while requesting " + url)
 		resp.Body.Close()
 	}
 	return
@@ -82,7 +82,7 @@ func (this JwtImpersonate) Put(url string, contentType string, body io.Reader) (
 	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
-		err = errors.New(buf.String())
+		err = errors.New("unexpected status:" + resp.Status + " " + buf.String() + "\n while requesting " + url)
 		resp.Body.Close()
 	}
 	return
@@ -116,7 +116,7 @@ func (this JwtImpersonate) Delete(url string, body interface{}) (resp *http.Resp
 	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
-		err = errors.New(buf.String())
+		err = errors.New("unexpected status:" + resp.Status + " " + buf.String() + "\n while requesting " + url)
 		resp.Body.Close()
 	}
 	return
@@ -146,7 +146,7 @@ func (this JwtImpersonate) DeleteWithBody(url string, body interface{}) (resp *h
 	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
-		err = errors.New(buf.String())
+		err = errors.New("unexpected status:" + resp.Status + " " + buf.String() + "\n while requesting " + url)
 		resp.Body.Close()
 	}
 	return
@@ -203,7 +203,7 @@ func (this JwtImpersonate) Get(url string) (resp *http.Response, err error) {
 	if resp.StatusCode >= 300 {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(resp.Body)
-		err = errors.New(buf.String())
+		err = errors.New("unexpected status:" + resp.Status + " " + buf.String() + "\n while requesting " + url)
 		resp.Body.Close()
 	}
 	return

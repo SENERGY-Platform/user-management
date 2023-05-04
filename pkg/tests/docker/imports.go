@@ -18,53 +18,59 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
 func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "ghcr.io/senergy-platform/import-deploy",
-		Tag:        "dev",
-		Env: []string{
-			"MONGO_URL=" + mongoUrl,
-			"MONGO_REPL_SET=false",
-			"IMPORT_REPO_URL=" + importRepoUrl,
-			"PERMISSIONS_URL=" + permissionsUrl,
-			"KAFKA_BOOTSTRAP=" + kafkaUrl,
-			"DEBUG=true",
-			"DOCKER_PULL=true",
-			"DEPLOY_MODE=rancher2",
-			"RANCHER_URL=" + rancherUrl + "/",
-			"RANCHER_ACCESS_KEY=foo",
-			"RANCHER_SECRET_KEY=bar",
+	log.Println("start import-deploy")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/import-deploy:dev",
+			Env: map[string]string{
+				"MONGO_URL":          mongoUrl,
+				"MONGO_REPL_SET":     "false",
+				"IMPORT_REPO_URL":    importRepoUrl,
+				"PERMISSIONS_URL":    permissionsUrl,
+				"KAFKA_BOOTSTRAP":    kafkaUrl,
+				"DEBUG":              "true",
+				"DOCKER_PULL":        "true",
+				"DEPLOY_MODE":        "rancher2",
+				"RANCHER_URL":        rancherUrl + "/",
+				"RANCHER_ACCESS_KEY": "foo",
+				"RANCHER_SECRET_KEY": "bar",
+			},
+			ExposedPorts:    []string{"8080/tcp"},
+			WaitingFor:      wait.ForListeningPort("8080/tcp"),
+			AlwaysPullImage: true,
 		},
-	}, func(config *docker.HostConfig) {
+		Started: true,
 	})
 	if err != nil {
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-		wg.Done()
+		log.Println("DEBUG: remove container import-deploy", c.Terminate(context.Background()))
 	}()
-	hostPort = container.GetPort("8080/tcp")
-	go Dockerlog(pool, ctx, container, "IMPORT_DEPLOY")
-	ipAddress = container.Container.NetworkSettings.IPAddress
-	err = pool.Retry(func() error {
-		log.Println("try Imports connection...")
-		_, err := http.Get("http://" + ipAddress + ":8080/instances")
-		return err
-	})
+	err = Dockerlog(ctx, c, "IMPORT_DEPLOY")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
 	return hostPort, ipAddress, err
 }

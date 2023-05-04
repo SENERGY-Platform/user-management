@@ -168,7 +168,26 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-	_, notifierIp, err := NotificationContainer(ctx, wg, notifierDbIp)
+
+	vaultUrl, err := mocks.MockVault(ctx)
+	if err != nil {
+		return config, err
+	}
+	vaultUrl, err = LocalUrlToDockerUrl(vaultUrl)
+	if err != nil {
+		return config, err
+	}
+
+	keycloakUrl, err := mocks.MockKeycloak(ctx)
+	if err != nil {
+		return config, err
+	}
+	keycloakUrl, err = LocalUrlToDockerUrl(keycloakUrl)
+	if err != nil {
+		return config, err
+	}
+
+	_, notifierIp, err := NotificationContainer(ctx, wg, notifierDbIp, vaultUrl, keycloakUrl)
 	if err != nil {
 		return config, err
 	}

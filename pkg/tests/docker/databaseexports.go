@@ -18,55 +18,61 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
 func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, rancherUrl string, permSearchUrl string, influxDbHost string) (hostPort string, ipAddress string, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "ghcr.io/senergy-platform/analytics-serving-service",
-		Tag:        "dev",
-		Env: []string{
-			"MYSQL_HOST=" + mysqlHost,
-			"MYSQL_USER=root",
-			"MYSQL_PW=secret",
-			"MYSQL_DB=mysql",
-			"DOCKER_PULL=true",
-			"DRIVER=rancher2",
-			"TRANSFER_IMAGE=ghcr.io/senergy-platform/hello-world:test",
-			"RANCHER2_ENDPOINT=" + rancherUrl + "/",
-			"RANCHER_ACCESS_KEY=foo",
-			"RANCHER_SECRET_KEY=bar",
-			"PERMISSION_API_ENDPOINT=" + permSearchUrl,
-			"API_PORT=8080",
-			"INFLUX_DB_HOST=" + influxDbHost,
+	log.Println("start analytics-serving-service")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/analytics-serving-service:dev",
+			Env: map[string]string{
+				"MYSQL_HOST":              mysqlHost,
+				"MYSQL_USER":              "root",
+				"MYSQL_PW":                "secret",
+				"MYSQL_DB":                "mysql",
+				"DOCKER_PULL":             "true",
+				"DRIVER":                  "rancher2",
+				"TRANSFER_IMAGE":          "ghcr.io/senergy-platform/hello-world:test",
+				"RANCHER2_ENDPOINT":       rancherUrl + "/",
+				"RANCHER_ACCESS_KEY":      "foo",
+				"RANCHER_SECRET_KEY":      "bar",
+				"PERMISSION_API_ENDPOINT": permSearchUrl,
+				"API_PORT":                "8080",
+				"INFLUX_DB_HOST":          influxDbHost,
+			},
+			ExposedPorts:    []string{"8080/tcp"},
+			WaitingFor:      wait.ForListeningPort("8080/tcp"),
+			AlwaysPullImage: true,
 		},
-	}, func(config *docker.HostConfig) {
+		Started: true,
 	})
 	if err != nil {
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-		wg.Done()
+		log.Println("DEBUG: remove container analytics-serving-service", c.Terminate(context.Background()))
 	}()
-	hostPort = container.GetPort("8080/tcp")
-	go Dockerlog(pool, ctx, container, "DATABASE-EXPORT")
-	ipAddress = container.Container.NetworkSettings.IPAddress
-	err = pool.Retry(func() error {
-		log.Println("try DatabaseExports connection...")
-		_, err := http.Get("http://" + ipAddress + ":8080/instances")
-		return err
-	})
+	err = Dockerlog(ctx, c, "DATABASE-EXPORT")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
 	return hostPort, ipAddress, err
 }

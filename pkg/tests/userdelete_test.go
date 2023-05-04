@@ -87,6 +87,7 @@ func TestUserDelete(t *testing.T) {
 	flowEngineIds := []string{}
 	notificationIds := []string{}
 	brokerIds := []string{}
+	var dbId string
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
@@ -94,7 +95,8 @@ func TestUserDelete(t *testing.T) {
 		t.Run("init dashboard state", initDashboardState(config, user1, user2, &dashboardIds))
 		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
 		t.Run("init broker exports state", initBrokerExportState(config, user1, user2, &brokerExportsIds))
-		t.Run("init database exports state", initDatabaseExportState(config, user1, user2, &dbExportsIds))
+		t.Run("init public export db", initPublicExportDatabase(config, user1, &dbId))
+		t.Run("init database exports state", initDatabaseExportState(config, user1, user2, dbId, &dbExportsIds))
 		t.Run("init operators state", initOperatorState(config, user1, user2, &operatorIds))
 		t.Run("init flow state", initFlowState(config, user1, user2, &flowIds))
 		t.Run("init flow engine state", initFlowEngineState(config, user1, user2, &flowEngineIds))

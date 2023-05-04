@@ -19,13 +19,16 @@ package docker
 import (
 	"context"
 	"errors"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"fmt"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+	"io"
 	"log"
 	"net"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func getFreePort() (int, error) {
@@ -50,24 +53,25 @@ func GetFreePort() (string, error) {
 	return strconv.Itoa(portInt), nil
 }
 
-func Dockerlog(pool *dockertest.Pool, ctx context.Context, repo *dockertest.Resource, name string) {
-	out := &LogWriter{logger: log.New(os.Stdout, "["+name+"]", 0)}
-	err := pool.Client.Logs(docker.LogsOptions{
-		Stdout:       true,
-		Stderr:       true,
-		Context:      ctx,
-		Container:    repo.Container.ID,
-		Follow:       true,
-		OutputStream: out,
-		ErrorStream:  out,
-	})
-	if err != nil && err != context.Canceled {
-		log.Println("DEBUG-ERROR: unable to start docker log", name, err)
+func Dockerlog(ctx context.Context, container testcontainers.Container, name string) error {
+	container.FollowOutput(&LogWriter{logger: log.New(os.Stdout, "["+name+"] ", log.LstdFlags)})
+	err := container.StartLogProducer(context.Background())
+	if err != nil {
+		return err
 	}
+	go func() {
+		<-ctx.Done()
+		log.Println("stop container log for", name, container.StopLogProducer())
+	}()
+	return nil
 }
 
 type LogWriter struct {
 	logger *log.Logger
+}
+
+func (this *LogWriter) Accept(l testcontainers.Log) {
+	this.Write(l.Content)
 }
 
 func (this *LogWriter) Write(p []byte) (n int, err error) {
@@ -75,21 +79,86 @@ func (this *LogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func waitretry(timeout time.Duration, f func(ctx context.Context, target wait.StrategyTarget) error) func(ctx context.Context, target wait.StrategyTarget) error {
+	return func(ctx context.Context, target wait.StrategyTarget) (err error) {
+		return retry(timeout, func() error {
+			return f(ctx, target)
+		})
+	}
+}
+
+func retry(timeout time.Duration, f func() error) (err error) {
+	err = errors.New("initial")
+	start := time.Now()
+	for i := int64(1); err != nil && time.Since(start) < timeout; i++ {
+		err = f()
+		if err != nil {
+			log.Println("ERROR: :", err)
+			wait := time.Duration(i) * time.Second
+			if time.Since(start)+wait < timeout {
+				log.Println("ERROR: retry after:", wait.String())
+				time.Sleep(wait)
+			} else {
+				time.Sleep(time.Since(start) + wait - timeout)
+				return f()
+			}
+		}
+	}
+	return err
+}
+
+func Forward(ctx context.Context, fromPort int, toAddr string) error {
+	log.Println("forward", fromPort, "to", toAddr)
+	incoming, err := net.Listen("tcp", fmt.Sprintf(":%d", fromPort))
+	if err != nil {
+		return err
+	}
+	go func() {
+		defer log.Println("closed forward incoming")
+		<-ctx.Done()
+		incoming.Close()
+	}()
+	go func() {
+		for {
+			client, err := incoming.Accept()
+			if err != nil {
+				log.Println("FORWARD ERROR:", err)
+				return
+			}
+			go handleForwardClient(client, toAddr)
+		}
+	}()
+	return nil
+}
+
+func handleForwardClient(client net.Conn, addr string) {
+	//log.Println("new forward client")
+	target, err := net.Dial("tcp", addr)
+	if err != nil {
+		log.Println("FORWARD ERROR:", err)
+		return
+	}
+	go func() {
+		defer target.Close()
+		defer client.Close()
+		io.Copy(target, client)
+	}()
+	go func() {
+		defer target.Close()
+		defer client.Close()
+		io.Copy(client, target)
+	}()
+}
+
 func GetHostIp() (string, error) {
-	pool, err := dockertest.NewPool("")
+	provider, err := testcontainers.NewDockerProvider(testcontainers.DefaultNetwork("bridge"))
 	if err != nil {
 		return "", err
 	}
-	networks, _ := pool.Client.ListNetworks()
-	for _, network := range networks {
-		if network.Name == "bridge" {
-			return network.IPAM.Config[0].Gateway, nil
-		}
-	}
-	return "", errors.New("no bridge network found")
+	return provider.GetGatewayIP(context.Background())
 }
 
-//transform local-address to address in docker container
+// transform local-address to address in docker container
 func LocalUrlToDockerUrl(localUrl string) (dockerUrl string, err error) {
 	hostIp, err := GetHostIp()
 	if err != nil {

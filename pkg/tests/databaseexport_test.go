@@ -22,27 +22,63 @@ import (
 	"testing"
 )
 
-func getDbExportElement(name string) map[string]interface{} {
+func getDbExportElement(name string, dbId string) map[string]interface{} {
 	return map[string]interface{}{
-		"Name":        name,
-		"FilterType":  "deviceId",
-		"Filter":      name,
-		"EntityName":  name,
-		"ServiceName": name,
-		"Topic":       name,
-		"Offset":      "foo",
+		"Name":             name,
+		"FilterType":       "deviceId",
+		"Filter":           name,
+		"EntityName":       name,
+		"ServiceName":      name,
+		"Topic":            name,
+		"Offset":           "foo",
+		"ExportDatabaseID": dbId,
 	}
 }
 
-func initDatabaseExportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
+type ExportDatabaseRequest struct {
+	Name          string `json:"Name" validate:"required"`
+	Description   string `json:"Description"`
+	Type          string `json:"Type" validate:"required"`
+	Deployment    string `json:"deployment" validate:"required"`
+	Url           string `json:"Url" validate:"required"`
+	EwFilterTopic string `json:"EwFilterTopic" validate:"required"`
+	Public        bool   `json:"Public"`
+}
+
+func initPublicExportDatabase(config configuration.Config, user ctrl.Token, dbId *string) func(t *testing.T) {
+	return func(t *testing.T) {
+		temp := ctrl.ExportIdWrapper{}
+		err := user.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/databases",
+			ExportDatabaseRequest{
+				Name:          "edb1",
+				Description:   "",
+				Type:          "influxdb",
+				Deployment:    "foo",
+				Url:           "bar",
+				EwFilterTopic: "batz",
+				Public:        true,
+			},
+			&temp)
+		if err != nil {
+			t.Error(err)
+			t.Logf("%#v", err)
+			return
+		}
+		*dbId = temp.Id
+	}
+}
+
+func initDatabaseExportState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, dbId string, ids *[]string) func(t *testing.T) {
 	return func(t *testing.T) {
 		temp := ctrl.ExportIdWrapper{}
 		err := user1.Impersonate().PostJSON(
 			config.DatabaseExportsUrl+"/instance",
-			getDbExportElement("1"),
+			getDbExportElement("1", dbId),
 			&temp)
 		if err != nil {
 			t.Error(err)
+			t.Logf("%#v", err)
 			return
 		}
 		*ids = append(*ids, temp.Id)
@@ -50,7 +86,7 @@ func initDatabaseExportState(config configuration.Config, user1 ctrl.Token, user
 		temp = ctrl.ExportIdWrapper{}
 		err = user1.Impersonate().PostJSON(
 			config.DatabaseExportsUrl+"/instance",
-			getDbExportElement("2"),
+			getDbExportElement("2", dbId),
 			&temp)
 		if err != nil {
 			t.Error(err)
@@ -61,7 +97,7 @@ func initDatabaseExportState(config configuration.Config, user1 ctrl.Token, user
 		temp = ctrl.ExportIdWrapper{}
 		err = user2.Impersonate().PostJSON(
 			config.DatabaseExportsUrl+"/instance",
-			getDbExportElement("3"),
+			getDbExportElement("3", dbId),
 			&temp)
 		if err != nil {
 			t.Error(err)

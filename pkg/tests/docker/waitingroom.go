@@ -18,43 +18,49 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
 func WaitingRoom(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "ghcr.io/senergy-platform/device-waiting-room",
-		Tag:        "dev",
-		Env: []string{
-			"MONGO_URL=" + mongoUrl,
+	log.Println("start device-waiting-room")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/device-waiting-room:dev",
+			Env: map[string]string{
+				"MONGO_URL": mongoUrl,
+			},
+			ExposedPorts:    []string{"8080/tcp"},
+			WaitingFor:      wait.ForListeningPort("8080/tcp"),
+			AlwaysPullImage: true,
 		},
-	}, func(config *docker.HostConfig) {
+		Started: true,
 	})
 	if err != nil {
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-		wg.Done()
+		log.Println("DEBUG: remove container device-waiting-room", c.Terminate(context.Background()))
 	}()
-	hostPort = container.GetPort("8080/tcp")
-	go Dockerlog(pool, ctx, container, "WAITING-ROOM")
-	ipAddress = container.Container.NetworkSettings.IPAddress
-	err = pool.Retry(func() error {
-		log.Println("try waiting-room connection...")
-		_, err := http.Get("http://" + ipAddress + ":8080/devices")
-		return err
-	})
+	err = Dockerlog(ctx, c, "WAITING-ROOM")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
 	return hostPort, ipAddress, err
 }

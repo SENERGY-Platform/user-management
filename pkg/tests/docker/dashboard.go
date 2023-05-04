@@ -18,43 +18,49 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
 func Dashboard(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPort string, ipAddress string, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "fgseitsrancher.wifa.intern.uni-leipzig.de:5000/dashboard",
-		Tag:        "dev",
-		Env: []string{
-			"MONGO=" + mongoIp,
+	log.Println("start dashboard")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/dashboard:dev",
+			Env: map[string]string{
+				"MONGO": mongoIp,
+			},
+			ExposedPorts:    []string{"8080/tcp"},
+			WaitingFor:      wait.ForListeningPort("8080/tcp"),
+			AlwaysPullImage: true,
 		},
-	}, func(config *docker.HostConfig) {
+		Started: true,
 	})
 	if err != nil {
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-		wg.Done()
+		log.Println("DEBUG: remove container dashboard", c.Terminate(context.Background()))
 	}()
-	hostPort = container.GetPort("8080/tcp")
-	ipAddress = container.Container.NetworkSettings.IPAddress
-	go Dockerlog(pool, ctx, container, "DASHBOARD")
-	err = pool.Retry(func() error {
-		log.Println("try dashboard connection...")
-		_, err := http.Get("http://" + ipAddress + ":8080/dashboards")
-		return err
-	})
+	err = Dockerlog(ctx, c, "DASHBOARD")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "8080/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
 	return hostPort, ipAddress, err
 }

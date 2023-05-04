@@ -18,43 +18,52 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
-func NotificationContainer(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPort string, ipAddress string, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "ghcr.io/senergy-platform/notifier",
-		Tag:        "dev",
-		Env: []string{
-			"MONGO_ADDR=" + mongoIp,
+func NotificationContainer(ctx context.Context, wg *sync.WaitGroup, mongoIp string, vaultUrl string, keycloakUrl string) (hostPort string, ipAddress string, err error) {
+	log.Println("start notifier")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/notifier:dev",
+			Env: map[string]string{
+				"MONGO_ADDR":   mongoIp,
+				"KEYCLOAK_URL": keycloakUrl,
+				"VAULT_URL":    vaultUrl,
+			},
+			ExposedPorts:    []string{"5000/tcp"},
+			WaitingFor:      wait.ForListeningPort("5000/tcp"),
+			AlwaysPullImage: true,
+			//SkipReaper:      true,
 		},
-	}, func(config *docker.HostConfig) {
+		Started: true,
 	})
 	if err != nil {
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-		wg.Done()
+		log.Println("DEBUG: remove container notifier", c.Terminate(context.Background()))
 	}()
-	hostPort = container.GetPort("5000/tcp")
-	ipAddress = container.Container.NetworkSettings.IPAddress
-	go Dockerlog(pool, ctx, container, "NOTIFIER")
-	err = pool.Retry(func() error {
-		log.Println("try notifier connection...")
-		_, err := http.Get("http://" + ipAddress + ":5000/")
-		return err
-	})
+	err = Dockerlog(ctx, c, "NOTIFIER")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "5000/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
 	return hostPort, ipAddress, err
 }

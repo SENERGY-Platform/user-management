@@ -18,47 +18,53 @@ package docker
 
 import (
 	"context"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"net/http"
 	"sync"
 )
 
 func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl string, parserUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
-	pool, err := dockertest.NewPool("")
-	if err != nil {
-		return "", "", err
-	}
-	container, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "ghcr.io/senergy-platform/analytics-flow-engine",
-		Tag:        "latest",
-		Env: []string{
-			"DEBUG=true",
-			"DRIVER=rancher2",
-			"RANCHER2_ENDPOINT=" + rancherUrl + "/",
-			"PARSER_API_ENDPOINT=" + parserUrl,
-			"PIPELINE_API_ENDPOINT=" + pipelineApiUrl,
+	log.Println("start analytics-flow-engine")
+	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "ghcr.io/senergy-platform/analytics-flow-engine",
+			Env: map[string]string{
+				"DEBUG":                 "true",
+				"DRIVER":                "rancher2",
+				"RANCHER2_ENDPOINT":     rancherUrl + "/",
+				"PARSER_API_ENDPOINT":   parserUrl,
+				"PIPELINE_API_ENDPOINT": pipelineApiUrl,
+			},
+			ExposedPorts:    []string{"8000/tcp"},
+			WaitingFor:      wait.ForListeningPort("8000/tcp"),
+			AlwaysPullImage: true,
 		},
-	}, func(config *docker.HostConfig) {
+		Started: true,
 	})
 	if err != nil {
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container " + container.Container.Name)
-		container.Close()
-		wg.Done()
+		log.Println("DEBUG: remove container analytics-flow-engine", c.Terminate(context.Background()))
 	}()
-	hostPort = container.GetPort("8000/tcp")
-	go Dockerlog(pool, ctx, container, "ANALYTICS-FLOW-ENGINE")
-	ipAddress = container.Container.NetworkSettings.IPAddress
-	err = pool.Retry(func() error {
-		log.Println("try BrokerExports connection...")
-		_, err := http.Get("http://" + ipAddress + ":8000")
-		return err
-	})
+	err = Dockerlog(ctx, c, "ANALYTICS-FLOW-ENGINE")
+	if err != nil {
+		return "", "", err
+	}
+
+	ipAddress, err = c.ContainerIP(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	temp, err := c.MappedPort(ctx, "8000/tcp")
+	if err != nil {
+		return "", "", err
+	}
+	hostPort = temp.Port()
+
 	return hostPort, ipAddress, err
 }
