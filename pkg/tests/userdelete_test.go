@@ -42,6 +42,7 @@ func TestUserDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal("ERROR: unable to load config", err)
 	}
+	config.RemoveExportDatabaseMetadataOnUserDelete = true
 
 	config.ServerPort, err = docker.GetFreePort()
 	if err != nil {
@@ -82,6 +83,7 @@ func TestUserDelete(t *testing.T) {
 	importIds := []string{}
 	brokerExportsIds := []string{}
 	dbExportsIds := []string{}
+	user2Databases := []string{}
 	operatorIds := []string{}
 	flowIds := []string{}
 	flowEngineIds := []string{}
@@ -96,6 +98,8 @@ func TestUserDelete(t *testing.T) {
 		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
 		t.Run("init broker exports state", initBrokerExportState(config, user1, user2, &brokerExportsIds))
 		t.Run("init public export db", initPublicExportDatabase(config, user1, &dbId))
+		user2Databases = append(user2Databases, dbId)
+		t.Run("init exports databases", initExportDatabases(config, user1, user2, &user2Databases))
 		t.Run("init database exports state", initDatabaseExportState(config, user1, user2, dbId, &dbExportsIds))
 		t.Run("init operators state", initOperatorState(config, user1, user2, &operatorIds))
 		t.Run("init flow state", initFlowState(config, user1, user2, &flowIds))
@@ -143,6 +147,7 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check dashboard state", checkDashboardState(config, user1, user2, dashboardIds))
 		t.Run("check imports state", checkImportsState(config, user1, user2, importIds))
 		t.Run("check broker exports state", checkBrokerExportsState(config, user1, user2, brokerExportsIds))
+		t.Run("check export databases", checkExportsDatabases(config, user1, user2, user2Databases))
 		t.Run("check database exports state", checkDatabaseExportsState(config, user1, user2, dbExportsIds))
 		t.Run("check operators state", checkOperatorState(config, user1, user2, operatorIds))
 		t.Run("check flows state", checkFlowState(config, user1, user2, flowIds))

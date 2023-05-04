@@ -19,6 +19,8 @@ package tests
 import (
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
+	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -35,23 +37,13 @@ func getDbExportElement(name string, dbId string) map[string]interface{} {
 	}
 }
 
-type ExportDatabaseRequest struct {
-	Name          string `json:"Name" validate:"required"`
-	Description   string `json:"Description"`
-	Type          string `json:"Type" validate:"required"`
-	Deployment    string `json:"deployment" validate:"required"`
-	Url           string `json:"Url" validate:"required"`
-	EwFilterTopic string `json:"EwFilterTopic" validate:"required"`
-	Public        bool   `json:"Public"`
-}
-
 func initPublicExportDatabase(config configuration.Config, user ctrl.Token, dbId *string) func(t *testing.T) {
 	return func(t *testing.T) {
 		temp := ctrl.ExportIdWrapper{}
 		err := user.Impersonate().PostJSON(
 			config.DatabaseExportsUrl+"/databases",
-			ExportDatabaseRequest{
-				Name:          "edb1",
+			ctrl.ExportDatabaseRequest{
+				Name:          "edb0",
 				Description:   "",
 				Type:          "influxdb",
 				Deployment:    "foo",
@@ -66,6 +58,66 @@ func initPublicExportDatabase(config configuration.Config, user ctrl.Token, dbId
 			return
 		}
 		*dbId = temp.Id
+	}
+}
+
+func initExportDatabases(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, user2Databases *[]string) func(t *testing.T) {
+	return func(t *testing.T) {
+		temp := ctrl.ExportIdWrapper{}
+		err := user1.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/databases",
+			ctrl.ExportDatabaseRequest{
+				Name:          "edb1",
+				Description:   "",
+				Type:          "influxdb",
+				Deployment:    "foo",
+				Url:           "bar",
+				EwFilterTopic: "batz",
+				Public:        false,
+			},
+			&temp)
+		if err != nil {
+			t.Error(err)
+			t.Logf("%#v", err)
+			return
+		}
+
+		temp = ctrl.ExportIdWrapper{}
+		err = user1.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/databases",
+			ctrl.ExportDatabaseRequest{
+				Name:          "edb2",
+				Description:   "",
+				Type:          "influxdb",
+				Deployment:    "foo",
+				Url:           "bar",
+				EwFilterTopic: "batz",
+				Public:        false,
+			},
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		temp = ctrl.ExportIdWrapper{}
+		err = user2.Impersonate().PostJSON(
+			config.DatabaseExportsUrl+"/databases",
+			ctrl.ExportDatabaseRequest{
+				Name:          "edb3",
+				Description:   "",
+				Type:          "influxdb",
+				Deployment:    "foo",
+				Url:           "bar",
+				EwFilterTopic: "batz",
+				Public:        false,
+			},
+			&temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		*user2Databases = append(*user2Databases, temp.Id)
 	}
 }
 
@@ -104,6 +156,44 @@ func initDatabaseExportState(config configuration.Config, user1 ctrl.Token, user
 			return
 		}
 		*ids = append(*ids, temp.Id)
+	}
+}
+
+func checkExportsDatabases(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, user2Databases []string) func(t *testing.T) {
+	return func(t *testing.T) {
+		if len(user2Databases) != 2 {
+			t.Error(user2Databases)
+		}
+		temp := []ctrl.ExportIdWrapper{}
+		err := user1.Impersonate().GetJSON(config.DatabaseExportsUrl+"/databases", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		//expect to find only the public database to remain
+		if len(temp) != 1 {
+			t.Error(temp)
+		}
+
+		temp = []ctrl.ExportIdWrapper{}
+		err = user2.Impersonate().GetJSON(config.DatabaseExportsUrl+"/databases", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp) != 2 {
+			t.Error(temp)
+			return
+		}
+		ids := []string{}
+		for _, id := range temp {
+			ids = append(ids, id.Id)
+		}
+		sort.Strings(ids)
+		sort.Strings(user2Databases)
+		if !reflect.DeepEqual(ids, user2Databases) {
+			t.Errorf("\n%#v\n%#v\n", ids, user2Databases)
+		}
 	}
 }
 

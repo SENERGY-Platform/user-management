@@ -57,6 +57,15 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 		log.Println("ERROR: DeleteDatabaseExportsUser()", err)
 		return err
 	}
+
+	if conf.RemoveExportDatabaseMetadataOnUserDelete {
+		err = DeleteExportDatabasesUser(token, conf)
+		if err != nil {
+			log.Println("ERROR: DeleteExportDatabasesUser()", err)
+			return err
+		}
+	}
+
 	err = DeleteAnalyticsOperatorRepoUser(token, conf)
 	if err != nil {
 		log.Println("ERROR: DeleteAnalyticsOperatorRepoUser()", err)

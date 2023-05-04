@@ -51,9 +51,11 @@ type Config struct {
 	AnalyticsFlowEngineUrl   string
 	AnalyticsPipelineUrl     string
 	NotifierUrl              string
+
+	RemoveExportDatabaseMetadataOnUserDelete bool
 }
 
-//loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
+// loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
 func Load(location string) (config Config, err error) {
 	file, err := os.Open(location)
 	if err != nil {
