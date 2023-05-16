@@ -18,9 +18,8 @@ package kafka
 
 import (
 	"context"
-	"errors"
 	"github.com/segmentio/kafka-go"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -31,29 +30,22 @@ type Producer struct {
 }
 
 func NewProducer(kafkaUrl string, topic string, debug bool) (*Producer, error) {
-	broker, err := GetBroker(kafkaUrl)
-	if err != nil {
-		return nil, err
-	}
-	if len(broker) == 0 {
-		return nil, errors.New("missing kafka broker")
-	}
-	writer, err := GetKafkaWriter(broker, topic, debug)
+	writer, err := GetKafkaWriter(kafkaUrl, topic, debug)
 	if err != nil {
 		return nil, err
 	}
 	return &Producer{writer: writer}, nil
 }
 
-func GetKafkaWriter(broker []string, topic string, debug bool) (writer *kafka.Writer, err error) {
+func GetKafkaWriter(broker string, topic string, debug bool) (writer *kafka.Writer, err error) {
 	var logger *log.Logger
 	if debug {
-		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", 0)
+		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", log.LstdFlags)
 	} else {
-		logger = log.New(ioutil.Discard, "", 0)
+		logger = log.New(io.Discard, "", 0)
 	}
 	writer = &kafka.Writer{
-		Addr:        kafka.TCP(broker...),
+		Addr:        kafka.TCP(broker),
 		Topic:       topic,
 		MaxAttempts: 10,
 		Logger:      logger,
