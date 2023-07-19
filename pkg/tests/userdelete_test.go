@@ -51,7 +51,9 @@ func TestUserDelete(t *testing.T) {
 	}
 
 	wg := &sync.WaitGroup{}
+	defer log.Println("done waiting")
 	defer wg.Wait()
+	defer log.Println("wait for wg")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

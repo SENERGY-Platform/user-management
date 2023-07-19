@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl string, parserUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
@@ -49,9 +50,10 @@ func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container analytics-flow-engine", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container analytics-flow-engine", c.Terminate(timeout))
 	}()
-	err = Dockerlog(ctx, c, "ANALYTICS-FLOW-ENGINE")
+	//err = Dockerlog(ctx, c, "ANALYTICS-FLOW-ENGINE")
 	if err != nil {
 		return "", "", err
 	}

@@ -75,7 +75,8 @@ func Kafka(ctx context.Context, wg *sync.WaitGroup, zookeeperUrl string) (kafkaU
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container kafka", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container kafka", c.Terminate(timeout))
 	}()
 
 	containerPort, err := c.MappedPort(ctx, "9092/tcp")
@@ -167,7 +168,8 @@ func Zookeeper(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddr
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container zookeeper", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container zookeeper", c.Terminate(timeout))
 	}()
 
 	//err = Dockerlog(ctx, c, "ZOOKEEPER")

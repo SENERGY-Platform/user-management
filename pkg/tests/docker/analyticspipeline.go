@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func AnalyticsPipeline(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPort string, ipAddress string, err error) {
@@ -45,9 +46,10 @@ func AnalyticsPipeline(ctx context.Context, wg *sync.WaitGroup, mongoIp string) 
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container analytics-pipeline", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container analytics-pipeline", c.Terminate(timeout))
 	}()
-	err = Dockerlog(ctx, c, "ANALYTICS-PIPELINE")
+	//err = Dockerlog(ctx, c, "ANALYTICS-PIPELINE")
 	if err != nil {
 		return "", "", err
 	}

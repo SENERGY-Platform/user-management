@@ -65,6 +65,7 @@ func (this *Consumer) start() error {
 	})
 	this.wg.Add(1)
 	go func() {
+		defer this.wg.Done()
 		defer r.Close()
 		defer log.Println("close consumer for topic ", this.topic)
 		for {

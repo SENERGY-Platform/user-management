@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func ProcessScheduler(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
@@ -45,9 +46,10 @@ func ProcessScheduler(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) 
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container process-scheduler", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container process-scheduler", c.Terminate(timeout))
 	}()
-	err = Dockerlog(ctx, c, "SCHEDULER")
+	//err = Dockerlog(ctx, c, "SCHEDULER")
 	if err != nil {
 		return "", "", err
 	}

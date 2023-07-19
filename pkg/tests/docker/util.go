@@ -53,16 +53,12 @@ func GetFreePort() (string, error) {
 	return strconv.Itoa(portInt), nil
 }
 
-func Dockerlog(ctx context.Context, container testcontainers.Container, name string) error {
+func Dockerlog(container testcontainers.Container, name string) error {
 	container.FollowOutput(&LogWriter{logger: log.New(os.Stdout, "["+name+"] ", log.LstdFlags)})
 	err := container.StartLogProducer(context.Background())
 	if err != nil {
 		return err
 	}
-	go func() {
-		<-ctx.Done()
-		log.Println("stop container log for", name, container.StopLogProducer())
-	}()
 	return nil
 }
 

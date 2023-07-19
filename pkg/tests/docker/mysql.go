@@ -23,6 +23,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func MysqlContainer(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
@@ -50,7 +51,8 @@ func MysqlContainer(ctx context.Context, wg *sync.WaitGroup) (hostPort string, i
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container mysql", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container mysql", c.Terminate(timeout))
 	}()
 
 	ipAddress, err = c.ContainerIP(ctx)

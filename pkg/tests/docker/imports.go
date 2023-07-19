@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
@@ -55,9 +56,10 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container import-deploy", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container import-deploy", c.Terminate(timeout))
 	}()
-	err = Dockerlog(ctx, c, "IMPORT_DEPLOY")
+	//err = Dockerlog(ctx, c, "IMPORT_DEPLOY")
 	if err != nil {
 		return "", "", err
 	}

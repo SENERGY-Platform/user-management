@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func NotificationContainer(ctx context.Context, wg *sync.WaitGroup, mongoIp string, vaultUrl string, keycloakUrl string) (hostPort string, ipAddress string, err error) {
@@ -48,9 +49,10 @@ func NotificationContainer(ctx context.Context, wg *sync.WaitGroup, mongoIp stri
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container notifier", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container notifier", c.Terminate(timeout))
 	}()
-	err = Dockerlog(ctx, c, "NOTIFIER")
+	//err = Dockerlog(ctx, c, "NOTIFIER")
 	if err != nil {
 		return "", "", err
 	}

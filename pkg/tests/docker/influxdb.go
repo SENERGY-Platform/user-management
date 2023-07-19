@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func InfluxdbContainer(ctx context.Context, wg *sync.WaitGroup) (hostport string, containerip string, err error) {
@@ -50,7 +51,8 @@ func InfluxdbContainer(ctx context.Context, wg *sync.WaitGroup) (hostport string
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container connectionlog influx", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container connectionlog influx", c.Terminate(timeout))
 	}()
 
 	containerip, err = c.ContainerIP(ctx)

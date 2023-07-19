@@ -22,6 +22,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
+	"time"
 )
 
 func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, rancherUrl string, permSearchUrl string, influxDbHost string) (hostPort string, ipAddress string, err error) {
@@ -57,9 +58,10 @@ func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, 
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		log.Println("DEBUG: remove container analytics-serving-service", c.Terminate(context.Background()))
+		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		log.Println("DEBUG: remove container analytics-serving-service", c.Terminate(timeout))
 	}()
-	err = Dockerlog(ctx, c, "DATABASE-EXPORT")
+	//err = Dockerlog(ctx, c, "DATABASE-EXPORT")
 	if err != nil {
 		return "", "", err
 	}
