@@ -49,10 +49,6 @@ func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp stri
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container analytics-operator-repo", c.Terminate(timeout))
 	}()
-	//err = Dockerlog(ctx, c, "ANALYTICS-OPERATOR-REPO")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {

@@ -58,10 +58,6 @@ func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, ran
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container kafka2mqtt-manager", c.Terminate(timeout))
 	}()
-	//err = Dockerlog(ctx, c, "BROKER-EXPORT")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {

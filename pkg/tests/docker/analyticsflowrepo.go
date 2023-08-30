@@ -49,10 +49,6 @@ func AnalyticsFlowRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string) 
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container analytics-flow-repo", c.Terminate(timeout))
 	}()
-	//err = Dockerlog(ctx, c, "ANALYTICS-FLOW-REPO")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {

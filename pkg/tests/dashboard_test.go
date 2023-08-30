@@ -26,8 +26,8 @@ import (
 func initDashboardState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, dashboardIds *[]string) func(t *testing.T) {
 	return func(t *testing.T) {
 		temp := ctrl.IdWrapper{}
-		err := user1.Impersonate().PutJSON(
-			config.DashboardServiceUrl+"/dashboard",
+		err := user1.Impersonate().PostJSON(
+			config.DashboardServiceUrl+"/dashboards",
 			map[string]interface{}{
 				"name":  "foo1",
 				"index": 0,
@@ -39,8 +39,8 @@ func initDashboardState(config configuration.Config, user1 ctrl.Token, user2 ctr
 		*dashboardIds = append(*dashboardIds, temp.Id)
 
 		temp = ctrl.IdWrapper{}
-		err = user1.Impersonate().PutJSON(
-			config.DashboardServiceUrl+"/dashboard",
+		err = user1.Impersonate().PostJSON(
+			config.DashboardServiceUrl+"/dashboards",
 			map[string]interface{}{
 				"name":  "foo2",
 				"index": 1,
@@ -52,8 +52,8 @@ func initDashboardState(config configuration.Config, user1 ctrl.Token, user2 ctr
 		*dashboardIds = append(*dashboardIds, temp.Id)
 
 		temp = ctrl.IdWrapper{}
-		err = user2.Impersonate().PutJSON(
-			config.DashboardServiceUrl+"/dashboard",
+		err = user2.Impersonate().PostJSON(
+			config.DashboardServiceUrl+"/dashboards",
 			map[string]interface{}{
 				"name":  "foo3",
 				"index": 0,

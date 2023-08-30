@@ -49,10 +49,6 @@ func Dashboard(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPor
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container dashboard", c.Terminate(timeout))
 	}()
-	//err = Dockerlog(ctx, c, "DASHBOARD")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {

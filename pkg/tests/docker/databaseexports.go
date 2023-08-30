@@ -61,10 +61,6 @@ func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, 
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container analytics-serving-service", c.Terminate(timeout))
 	}()
-	//err = Dockerlog(ctx, c, "DATABASE-EXPORT")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {

@@ -59,10 +59,6 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container import-deploy", c.Terminate(timeout))
 	}()
-	//err = Dockerlog(ctx, c, "IMPORT_DEPLOY")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {

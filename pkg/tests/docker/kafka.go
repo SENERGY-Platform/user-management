@@ -22,10 +22,8 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/wvanbergen/kazoo-go"
 	"log"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -55,7 +53,7 @@ func Kafka(ctx context.Context, wg *sync.WaitGroup, zookeeperUrl string) (kafkaU
 				wait.ForLog("INFO Awaiting socket connections on"),
 				wait.ForListeningPort("9092/tcp"),
 			),
-			ExposedPorts:    []string{"9092/tcp"},
+			ExposedPorts:    []string{strconv.Itoa(kafkaport) + ":9092"},
 			AlwaysPullImage: true,
 			Env: map[string]string{
 				"ALLOW_PLAINTEXT_LISTENER":             "yes",
@@ -75,18 +73,14 @@ func Kafka(ctx context.Context, wg *sync.WaitGroup, zookeeperUrl string) (kafkaU
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		log.Println("DEBUG: remove container kafka", c.Terminate(timeout))
+		log.Println("DEBUG: remove container kafka", c.Terminate(context.Background()))
 	}()
 
 	containerPort, err := c.MappedPort(ctx, "9092/tcp")
 	if err != nil {
 		return kafkaUrl, err
 	}
-	err = Forward(ctx, kafkaport, hostIp+":"+containerPort.Port())
-	if err != nil {
-		return kafkaUrl, err
-	}
+	log.Println("KAFKA_TEST: container-port", containerPort, kafkaport)
 
 	err = retry(1*time.Minute, func() error {
 		return tryKafkaConn(kafkaUrl)
@@ -129,33 +123,7 @@ func Zookeeper(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddr
 			WaitingFor: wait.ForAll(
 				wait.ForLog("binding to port"),
 				wait.ForListeningPort("2181/tcp"),
-				wait.ForNop(waitretry(1*time.Minute, func(ctx context.Context, target wait.StrategyTarget) error {
-					log.Println("try zk connection...")
-					zookeeper := kazoo.NewConfig()
-					host, err := target.Host(ctx)
-					if err != nil {
-						log.Println("host", err)
-						return err
-					}
-					port, err := target.MappedPort(ctx, "2181/tcp")
-					if err != nil {
-						log.Println("port", err)
-						return err
-					}
-					zk, chroot := kazoo.ParseConnectionString(host + ":" + port.Port())
-					zookeeper.Chroot = chroot
-					kz, err := kazoo.NewKazoo(zk, zookeeper)
-					if err != nil {
-						log.Println("kazoo", err)
-						return err
-					}
-					_, err = kz.Brokers()
-					if err != nil && strings.TrimSpace(err.Error()) != strings.TrimSpace("zk: node does not exist") {
-						log.Println("brokers", err)
-						return err
-					}
-					return nil
-				}))),
+			),
 			ExposedPorts:    []string{"2181/tcp"},
 			AlwaysPullImage: true,
 		},
@@ -168,14 +136,8 @@ func Zookeeper(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddr
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		log.Println("DEBUG: remove container zookeeper", c.Terminate(timeout))
+		log.Println("DEBUG: remove container zookeeper", c.Terminate(context.Background()))
 	}()
-
-	//err = Dockerlog(ctx, c, "ZOOKEEPER")
-	if err != nil {
-		return "", "", err
-	}
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {
