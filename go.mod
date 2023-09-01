@@ -14,8 +14,8 @@ require (
 )
 
 require (
+	github.com/SENERGY-Platform/vault-jwt-go v0.0.0-20230901105919-f8b5475fb4a3
 	github.com/google/uuid v1.3.1
-	github.com/senergy-platform/vault-jwt-go v0.0.0-20230831081658-ff188ad2e271
 	github.com/testcontainers/testcontainers-go v0.23.0
 )
 
