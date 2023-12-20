@@ -28,8 +28,10 @@ func initFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Tok
 		err := user1.Impersonate().PutJSON(
 			config.AnalyticsFlowRepoUrl+"/flow",
 			map[string]interface{}{
-				"name":  "1",
-				"image": "ghcr.io/senergy-platform/hello-world:test",
+				"name": "1",
+				"model": map[string]interface{}{
+					"cells": []interface{}{},
+				},
 			}, &temp)
 		if err != nil {
 			t.Error(err)
@@ -41,8 +43,10 @@ func initFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Tok
 		err = user1.Impersonate().PutJSON(
 			config.AnalyticsFlowRepoUrl+"/flow",
 			map[string]interface{}{
-				"name":  "2",
-				"image": "ghcr.io/senergy-platform/hello-world:test",
+				"name": "2",
+				"model": map[string]interface{}{
+					"cells": []interface{}{},
+				},
 			}, &temp)
 		if err != nil {
 			t.Error(err)
@@ -54,8 +58,10 @@ func initFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Tok
 		err = user2.Impersonate().PutJSON(
 			config.AnalyticsFlowRepoUrl+"/flow",
 			map[string]interface{}{
-				"name":  "3",
-				"image": "ghcr.io/senergy-platform/hello-world:test",
+				"name": "3",
+				"model": map[string]interface{}{
+					"cells": []interface{}{},
+				},
 				"share": map[string]interface{}{
 					"list": true,
 				},
@@ -69,9 +75,11 @@ func initFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Tok
 		err = user2.Impersonate().PutJSON(
 			config.AnalyticsFlowRepoUrl+"/flow",
 			map[string]interface{}{
-				"name":  "4",
-				"image": "ghcr.io/senergy-platform/hello-world:test",
-				"pub":   false,
+				"name": "4",
+				"model": map[string]interface{}{
+					"cells": []interface{}{},
+				},
+				"pub": false,
 			}, &temp)
 		if err != nil {
 			t.Error(err)
