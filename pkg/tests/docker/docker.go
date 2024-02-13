@@ -62,7 +62,6 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, err
 	}
 	config.ProcessSchedulerUrl = "http://" + psIp + ":8080"
-
 	_, dDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
 		return config, err
