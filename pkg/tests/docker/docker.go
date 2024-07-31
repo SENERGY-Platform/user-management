@@ -157,7 +157,12 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, err
 	}
 
-	_, engineIp, err := AnalyticsFlowEngine(ctx, wg, config.AnalyticsPipelineUrl, parserMockUrl, rancherUrl)
+	_, mqttIp, err := Mqtt(ctx, wg)
+	if err != nil {
+		return config, err
+	}
+
+	_, engineIp, err := AnalyticsFlowEngine(ctx, wg, config.AnalyticsPipelineUrl, parserMockUrl, rancherUrl, "tcp://"+mqttIp+":1883")
 	if err != nil {
 		return config, err
 	}

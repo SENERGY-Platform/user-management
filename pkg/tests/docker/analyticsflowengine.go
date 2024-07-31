@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl string, parserUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
+func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl string, parserUrl string, rancherUrl string, mqttUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-flow-engine")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -36,6 +36,7 @@ func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl
 				"RANCHER2_ENDPOINT":     rancherUrl + "/",
 				"PARSER_API_ENDPOINT":   parserUrl,
 				"PIPELINE_API_ENDPOINT": pipelineApiUrl,
+				"BROKER_ADDRESS":        mqttUrl,
 			},
 			ExposedPorts:    []string{"8000/tcp"},
 			WaitingFor:      wait.ForListeningPort("8000/tcp"),
