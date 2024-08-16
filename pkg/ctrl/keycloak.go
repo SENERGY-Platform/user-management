@@ -18,6 +18,7 @@ package ctrl
 
 import (
 	"errors"
+	"fmt"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"log"
 	"net/http"
@@ -25,9 +26,18 @@ import (
 )
 
 type User struct {
-	Id         string                 `json:"id"`
-	Name       string                 `json:"username"`
+	Id   string `json:"id"`
+	Name string `json:"username"`
+	//Enabled    bool                   `json:"enabled"`
+	//FirstName  string                 `json:"firstName"`
+	//LastName   string                 `json:"lastName"`
 	Attributes map[string]interface{} `json:"attributes"`
+}
+
+type Group struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
 }
 
 func GetUserByName(name string, conf configuration.Config) (user User, err error) {
@@ -83,4 +93,78 @@ func DeleteKeycloakUser(id string, conf configuration.Config) (err error) {
 		err = nil
 	}
 	return err
+}
+
+func GetUsers(excludeID string, conf configuration.Config) ([]User, error) {
+	return getUsers(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users", excludeID, conf)
+}
+
+func GetUsersGroups(id string, conf configuration.Config) ([]Group, error) {
+	var groups []Group
+	pageNum := 0
+	for {
+		token, err := EnsureAccess(conf)
+		if err != nil {
+			return nil, err
+		}
+		var page []Group
+		if err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users/"+id+"/groups"+fmt.Sprintf("?max=%d&first=%d", conf.KeycloakPageMax, conf.KeycloakPageMax*pageNum), &page); err != nil {
+			return nil, err
+		}
+		if len(page) == 0 {
+			break
+		}
+		groups = append(groups, page...)
+		pageNum++
+	}
+	return groups, nil
+}
+
+func GetGroupMembersCombined(groups []Group, excludeID string, conf configuration.Config) ([]User, error) {
+	var users []User
+	userSet := make(map[string]struct{})
+	for _, group := range groups {
+		members, err := getUsers(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/groups/"+url.QueryEscape(group.ID)+"/members", excludeID, conf)
+		if err != nil {
+			return nil, err
+		}
+		for _, user := range members {
+			if _, ok := userSet[user.Id]; ok {
+				continue
+			}
+			userSet[user.Id] = struct{}{}
+			users = append(users, user)
+		}
+	}
+	return users, nil
+}
+
+func getUsers(url string, excludeID string, conf configuration.Config) ([]User, error) {
+	var users []User
+	pageNum := 0
+	for {
+		token, err := EnsureAccess(conf)
+		if err != nil {
+			return nil, err
+		}
+		var page []User
+		if err = token.GetJSON(url+fmt.Sprintf("?max=%d&first=%d", conf.KeycloakPageMax, conf.KeycloakPageMax*pageNum), &page); err != nil {
+			return nil, err
+		}
+		if len(page) == 0 {
+			break
+		}
+		if excludeID != "" {
+			for _, user := range page {
+				if user.Id == excludeID {
+					continue
+				}
+				users = append(users, user)
+			}
+		} else {
+			users = append(users, page...)
+		}
+		pageNum++
+	}
+	return users, nil
 }
