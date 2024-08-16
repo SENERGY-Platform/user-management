@@ -17,7 +17,6 @@
 package ctrl
 
 import (
-	"errors"
 	"fmt"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"log"
@@ -40,28 +39,28 @@ type Group struct {
 	Path string `json:"path"`
 }
 
-func GetUserByName(name string, conf configuration.Config) (user User, err error) {
-	token, err := EnsureAccess(conf)
-	if err != nil {
-		return user, err
-	}
-	temp := []User{}
-	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users?username="+url.QueryEscape(name), &temp)
-	if err != nil {
-		return user, err
-	}
-	temp = filterExact(temp, name)
-	size := len(temp)
-	switch {
-	case size > 1:
-		err = errors.New("ambiguous username")
-	case size < 1:
-		err = errors.New("unable to find user")
-	default:
-		user = temp[0]
-	}
-	return
-}
+//func GetUserByName(name string, conf configuration.Config) (user User, err error) {
+//	token, err := EnsureAccess(conf)
+//	if err != nil {
+//		return user, err
+//	}
+//	temp := []User{}
+//	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users?username="+url.QueryEscape(name), &temp)
+//	if err != nil {
+//		return user, err
+//	}
+//	temp = filterExact(temp, name)
+//	size := len(temp)
+//	switch {
+//	case size > 1:
+//		err = errors.New("ambiguous username")
+//	case size < 1:
+//		err = errors.New("unable to find user")
+//	default:
+//		user = temp[0]
+//	}
+//	return
+//}
 
 func filterExact(users []User, name string) (result []User) {
 	for _, user := range users {
