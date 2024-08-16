@@ -113,6 +113,39 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		json.NewEncoder(res).Encode(user.Name)
 	})
 
+	router.GET("/user-list", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		token, err := GetParsedToken(r)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+		excludeID := ""
+		if excludeCaller := r.URL.Query().Get("excludeCaller"); excludeCaller == "true" {
+			excludeID = token.GetUserId()
+		}
+		var users []ctrl.User
+		if token.IsAdmin() {
+			users, err = ctrl.GetUsers(excludeID, api.conf)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			groups, err := ctrl.GetUsersGroups(token.GetUserId(), api.conf)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			users, err = ctrl.GetGroupMembersCombined(groups, excludeID, api.conf)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		json.NewEncoder(res).Encode(users)
+	})
+
 	//router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	//	name := ps.ByName("name")
 	//	user, err := ctrl.GetUserByName(name, api.conf)
