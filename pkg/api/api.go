@@ -252,14 +252,14 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		}
 	})
 
-	router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		roles, err := ctrl.GetRoles(api.conf)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		json.NewEncoder(res).Encode(roles)
-	})
+	//router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//	roles, err := ctrl.GetRoles(api.conf)
+	//	if err != nil {
+	//		http.Error(res, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	json.NewEncoder(res).Encode(roles)
+	//})
 
 	return
 }
