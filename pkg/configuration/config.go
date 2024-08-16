@@ -32,6 +32,7 @@ type Config struct {
 
 	KeycloakUrl              string
 	KeycloakRealm            string
+	KeycloakPageMax          int
 	AuthClientId             string `config:"secret"`
 	AuthClientSecret         string `config:"secret"`
 	AuthExpirationTimeBuffer float64

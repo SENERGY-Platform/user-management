@@ -8,6 +8,7 @@
 	"AuthClientId": "userservice",
 	"AuthClientSecret": "",
 	"KeycloakRealm": "master",
+	"KeycloakPageMax": 100,
 
 	"AuthExpirationTimeBuffer": 2,
 
