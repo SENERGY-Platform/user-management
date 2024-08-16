@@ -113,27 +113,27 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		json.NewEncoder(res).Encode(user.Name)
 	})
 
-	router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		name := ps.ByName("name")
-		user, err := ctrl.GetUserByName(name, api.conf)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		res.Header().Set("Content-Type", "application/json; charset=utf-8")
-		json.NewEncoder(res).Encode(user)
-	})
+	//router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//	name := ps.ByName("name")
+	//	user, err := ctrl.GetUserByName(name, api.conf)
+	//	if err != nil {
+	//		http.Error(res, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	//	json.NewEncoder(res).Encode(user)
+	//})
 
-	router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		name := ps.ByName("name")
-		user, err := ctrl.GetUserByName(name, api.conf)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		res.Header().Set("Content-Type", "application/json; charset=utf-8")
-		json.NewEncoder(res).Encode(user.Id)
-	})
+	//router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//	name := ps.ByName("name")
+	//	user, err := ctrl.GetUserByName(name, api.conf)
+	//	if err != nil {
+	//		http.Error(res, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	//	json.NewEncoder(res).Encode(user.Id)
+	//})
 
 	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		usertoken, err := GetParsedToken(r)
