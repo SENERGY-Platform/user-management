@@ -30,8 +30,6 @@ import (
 	"time"
 
 	"net/url"
-
-	"io/ioutil"
 )
 
 type JwtImpersonate struct {
@@ -215,7 +213,7 @@ func (this JwtImpersonate) GetJSON(url string, result interface{}) (err error) {
 		return err
 	}
 	defer resp.Body.Close()
-	payload, err := ioutil.ReadAll(resp.Body)
+	payload, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -284,7 +282,7 @@ func getOpenidToken(token *OpenidToken, conf configuration.Config) (err error) {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		log.Println("ERROR: getOpenidToken()", resp.StatusCode, string(body))
 		err = errors.New("access denied")
 		resp.Body.Close()
@@ -308,7 +306,7 @@ func refreshOpenidToken(token *OpenidToken, conf configuration.Config) (err erro
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		log.Println("ERROR: refreshOpenidToken()", resp.StatusCode, string(body))
 		err = errors.New("access denied")
 		resp.Body.Close()
