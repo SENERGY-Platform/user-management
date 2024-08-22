@@ -90,7 +90,13 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, err
 	}
 
-	_, importsIp, err := Imports(ctx, wg, importsDbUrl, importRepoUrl, permissionsUrl, config.KafkaBootstrap, rancherUrl)
+	_, permV2Ip, err := PermissionsV2(ctx, wg, importsDbUrl)
+	if err != nil {
+		return config, err
+	}
+	permissionsV2Url := "http://" + permV2Ip + ":8080"
+
+	_, importsIp, err := Imports(ctx, wg, importsDbUrl, importRepoUrl, permissionsUrl, config.KafkaBootstrap, rancherUrl, permissionsV2Url)
 	if err != nil {
 		return config, err
 	}

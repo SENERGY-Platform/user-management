@@ -25,24 +25,14 @@ import (
 	"time"
 )
 
-func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string, rancherUrl string, permV2Url string) (hostPort string, ipAddress string, err error) {
-	log.Println("start import-deploy")
+func PermissionsV2(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
+	log.Println("start permissions-v2")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/import-deploy:dev",
+			Image: "ghcr.io/senergy-platform/permissions-v2:dev",
 			Env: map[string]string{
-				"MONGO_URL":          mongoUrl,
-				"MONGO_REPL_SET":     "false",
-				"IMPORT_REPO_URL":    importRepoUrl,
-				"PERMISSIONS_URL":    permissionsUrl,
-				"KAFKA_BOOTSTRAP":    kafkaUrl,
-				"DEBUG":              "true",
-				"DOCKER_PULL":        "true",
-				"DEPLOY_MODE":        "rancher2",
-				"RANCHER_URL":        rancherUrl + "/",
-				"RANCHER_ACCESS_KEY": "foo",
-				"RANCHER_SECRET_KEY": "bar",
-				"PERMISSION_V2_URL":  permV2Url,
+				"DEV_NOTIFIER_URL": "",
+				"MONGO_URL":        mongoUrl,
 			},
 			ExposedPorts:    []string{"8080/tcp"},
 			WaitingFor:      wait.ForListeningPort("8080/tcp"),
@@ -57,8 +47,7 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		log.Println("DEBUG: remove container import-deploy", c.Terminate(timeout))
+		log.Println("DEBUG: remove container permissions-v2", c.Terminate(context.Background()))
 	}()
 
 	ipAddress, err = c.ContainerIP(ctx)
@@ -70,6 +59,6 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 		return "", "", err
 	}
 	hostPort = temp.Port()
-
+	time.Sleep(time.Second)
 	return hostPort, ipAddress, err
 }
