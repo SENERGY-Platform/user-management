@@ -55,7 +55,50 @@ func Start(ctx context.Context, conf configuration.Config) (wg *sync.WaitGroup, 
 
 func (api *api) getRoutes() (router *httprouter.Router) {
 	router = httprouter.New()
+	api.getUserByID(router)
+	api.deleteUserByID(router)
+	api.deleteUser(router)
+	api.getUsernameByID(router)
+	api.getUsers(router)
+	api.getSessions(router)
+	api.putPassword(router)
+	api.putInfo(router)
 
+	//router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//	name := ps.ByName("name")
+	//	user, err := ctrl.GetUserByName(name, api.conf)
+	//	if err != nil {
+	//		http.Error(res, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	//	json.NewEncoder(res).Encode(user)
+	//})
+
+	//router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//	name := ps.ByName("name")
+	//	user, err := ctrl.GetUserByName(name, api.conf)
+	//	if err != nil {
+	//		http.Error(res, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
+	//	json.NewEncoder(res).Encode(user.Id)
+	//})
+
+	//router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//	roles, err := ctrl.GetRoles(api.conf)
+	//	if err != nil {
+	//		http.Error(res, err.Error(), http.StatusInternalServerError)
+	//		return
+	//	}
+	//	json.NewEncoder(res).Encode(roles)
+	//})
+
+	return
+}
+
+func (api *api) getUserByID(router *httprouter.Router) {
 	router.GET("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
 		user, err := ctrl.GetUserById(id, api.conf)
@@ -66,7 +109,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(res).Encode(user)
 	})
+}
 
+func (api *api) deleteUserByID(router *httprouter.Router) {
 	router.DELETE("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
 		token, err := GetParsedToken(r)
@@ -86,7 +131,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(res).Encode("ok")
 	})
+}
 
+func (api *api) deleteUser(router *httprouter.Router) {
 	router.DELETE("/user", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		token, err := GetParsedToken(r)
 		if err != nil {
@@ -101,7 +148,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(res).Encode("ok")
 	})
+}
 
+func (api *api) getUsernameByID(router *httprouter.Router) {
 	router.GET("/user/id/:id/name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
 		user, err := ctrl.GetUserById(id, api.conf)
@@ -112,7 +161,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(res).Encode(user.Name)
 	})
+}
 
+func (api *api) getUsers(router *httprouter.Router) {
 	router.GET("/user-list", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		token, err := GetParsedToken(r)
 		if err != nil {
@@ -145,29 +196,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(res).Encode(users)
 	})
+}
 
-	//router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//	name := ps.ByName("name")
-	//	user, err := ctrl.GetUserByName(name, api.conf)
-	//	if err != nil {
-	//		http.Error(res, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//	json.NewEncoder(res).Encode(user)
-	//})
-
-	//router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//	name := ps.ByName("name")
-	//	user, err := ctrl.GetUserByName(name, api.conf)
-	//	if err != nil {
-	//		http.Error(res, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//	json.NewEncoder(res).Encode(user.Id)
-	//})
-
+func (api *api) getSessions(router *httprouter.Router) {
 	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		usertoken, err := GetParsedToken(r)
 		if err != nil {
@@ -192,7 +223,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 			}
 		}
 	})
+}
 
+func (api *api) putPassword(router *httprouter.Router) {
 	router.PUT("/password", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		usertoken, err := GetParsedToken(request)
 		if err != nil {
@@ -238,7 +271,9 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 			log.Println("ERROR: /password io.Copy ", err)
 		}
 	})
+}
 
+func (api *api) putInfo(router *httprouter.Router) {
 	router.PUT("/info", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		usertoken, err := GetParsedToken(request)
 		if err != nil {
@@ -284,17 +319,6 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 			log.Println("ERROR: /info io.Copy ", err)
 		}
 	})
-
-	//router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//	roles, err := ctrl.GetRoles(api.conf)
-	//	if err != nil {
-	//		http.Error(res, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	json.NewEncoder(res).Encode(roles)
-	//})
-
-	return
 }
 
 type PasswordRequest struct {
