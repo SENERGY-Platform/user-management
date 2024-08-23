@@ -25,12 +25,12 @@ import (
 )
 
 type User struct {
-	Id   string `json:"id"`
-	Name string `json:"username"`
+	Id         string                 `json:"id"`
+	Name       string                 `json:"username"`
+	Attributes map[string]interface{} `json:"attributes"`
 	//Enabled    bool                   `json:"enabled"`
 	//FirstName  string                 `json:"firstName"`
 	//LastName   string                 `json:"lastName"`
-	Attributes map[string]interface{} `json:"attributes"`
 }
 
 type Group struct {
