@@ -84,7 +84,7 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 		doc, err := swag.ReadDoc()
 		if err != nil {
-			http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		doc = strings.Replace(doc, `"host": "",`, "", 1)
