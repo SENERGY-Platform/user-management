@@ -54,6 +54,8 @@ type Config struct {
 	NotifierUrl              string
 
 	RemoveExportDatabaseMetadataOnUserDelete bool
+
+	EnableSwaggerUi bool
 }
 
 // loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
