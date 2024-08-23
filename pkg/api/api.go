@@ -63,38 +63,6 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 	api.getSessions(router)
 	api.putPassword(router)
 	api.putInfo(router)
-
-	//router.GET("/user/name/:name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//	name := ps.ByName("name")
-	//	user, err := ctrl.GetUserByName(name, api.conf)
-	//	if err != nil {
-	//		http.Error(res, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//	json.NewEncoder(res).Encode(user)
-	//})
-
-	//router.GET("/user/name/:name/id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//	name := ps.ByName("name")
-	//	user, err := ctrl.GetUserByName(name, api.conf)
-	//	if err != nil {
-	//		http.Error(res, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	res.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//	json.NewEncoder(res).Encode(user.Id)
-	//})
-
-	//router.GET("/roles", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//	roles, err := ctrl.GetRoles(api.conf)
-	//	if err != nil {
-	//		http.Error(res, err.Error(), http.StatusInternalServerError)
-	//		return
-	//	}
-	//	json.NewEncoder(res).Encode(roles)
-	//})
-
 	return
 }
 
