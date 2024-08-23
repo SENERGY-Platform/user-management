@@ -1,0 +1,240 @@
+basePath: /
+definitions:
+  api.PasswordRequest:
+    properties:
+      password:
+        type: string
+    type: object
+  api.UserInfoRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+    type: object
+  ctrl.User:
+    properties:
+      attributes:
+        additionalProperties: true
+        type: object
+      id:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: User Management API
+  version: v0.0.5
+paths:
+  /info:
+    put:
+      consumes:
+      - application/json
+      description: set user's details, parses jwt for ID
+      parameters:
+      - description: user details
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/api.UserInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: set user info
+      tags:
+      - user
+  /password:
+    put:
+      consumes:
+      - application/json
+      description: set password for user, parses jwt for ID
+      parameters:
+      - description: user password
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/api.PasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: set password for user
+      tags:
+      - user
+  /sessions:
+    get:
+      description: get user's sessions by parsing provided jwt token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: get user's sessions
+      tags:
+      - user
+  /user:
+    delete:
+      description: delete user by parsing provided jwt token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+        "412":
+          description: Precondition Failed
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: delete user
+      tags:
+      - user
+  /user-list:
+    get:
+      description: parses provided jwt and lists all users if admin or only lists
+        users from groups the calling user is a member of
+      parameters:
+      - description: if true exclude calling user from result
+        in: query
+        name: excludeCaller
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ctrl.User'
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: get users
+      tags:
+      - user
+  /user/id/{id}:
+    delete:
+      description: delete user by providing a user ID
+      parameters:
+      - description: user ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+        "403":
+          description: Forbidden
+        "412":
+          description: Precondition Failed
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: delete user by ID
+      tags:
+      - user
+    get:
+      description: get user by providing a user ID
+      parameters:
+      - description: user ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ctrl.User'
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: get user by ID
+      tags:
+      - user
+  /user/id/{id}/name:
+    get:
+      description: get username by providing a user ID
+      parameters:
+      - description: user ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: get username
+      tags:
+      - user
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
