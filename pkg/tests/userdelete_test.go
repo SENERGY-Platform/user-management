@@ -25,11 +25,49 @@ import (
 	"github.com/SENERGY-Platform/user-management/pkg/tests/docker"
 	"github.com/segmentio/kafka-go"
 	"log"
+	"net/http"
 	"os"
 	"sync"
 	"testing"
 	"time"
 )
+
+func TestSwagger(t *testing.T) {
+	config, err := configuration.Load("./../../config.json")
+	if err != nil {
+		t.Fatal("ERROR: unable to load config", err)
+	}
+	config.RemoveExportDatabaseMetadataOnUserDelete = true
+
+	config.ServerPort, err = docker.GetFreePort()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	defer log.Println("done waiting")
+	defer wg.Wait()
+	defer log.Println("wait for wg")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, err = api.Start(ctx, config)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Run("swagger", func(t *testing.T) {
+		resp, err := http.Get("http://localhost:" + config.ServerPort + "/doc")
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Error(resp.StatusCode)
+		}
+	})
+}
 
 func TestUserDelete(t *testing.T) {
 	old := ctrl.BatchSize

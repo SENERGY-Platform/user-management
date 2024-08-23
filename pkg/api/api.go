@@ -19,6 +19,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	_ "github.com/SENERGY-Platform/user-management/docs"
 	"github.com/SENERGY-Platform/user-management/pkg/api/util"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
