@@ -53,6 +53,15 @@ func Start(ctx context.Context, conf configuration.Config) (wg *sync.WaitGroup, 
 	return
 }
 
+// @title         User Management API
+// @version       v0.0.5
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+// @BasePath  /
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func (api *api) getRoutes() (router *httprouter.Router) {
 	router = httprouter.New()
 	api.getUserByID(router)
@@ -66,6 +75,16 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 	return
 }
 
+// getUserByID godoc
+// @Summary      get user by ID
+// @Description  get user by providing a user ID
+// @Tags         user
+// @Security Bearer
+// @Param        id path string true "user ID"
+// @Produce      json
+// @Success      200 {object} ctrl.User
+// @Failure      500
+// @Router       /user/id/{id} [get]
 func (api *api) getUserByID(router *httprouter.Router) {
 	router.GET("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
@@ -79,6 +98,19 @@ func (api *api) getUserByID(router *httprouter.Router) {
 	})
 }
 
+// deleteUserByID godoc
+// @Summary      delete user by ID
+// @Description  delete user by providing a user ID
+// @Tags         user
+// @Security Bearer
+// @Param        id path string true "user ID"
+// @Produce      json
+// @Success      200 {object} string
+// @Failure      400
+// @Failure      403
+// @Failure      412
+// @Failure      500
+// @Router       /user/id/{id} [delete]
 func (api *api) deleteUserByID(router *httprouter.Router) {
 	router.DELETE("/user/id/:id", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
@@ -101,6 +133,17 @@ func (api *api) deleteUserByID(router *httprouter.Router) {
 	})
 }
 
+// deleteUser godoc
+// @Summary      delete user
+// @Description  delete user by parsing provided jwt token
+// @Tags         user
+// @Security Bearer
+// @Produce      json
+// @Success      200 {object} string
+// @Failure      401
+// @Failure      412
+// @Failure      500
+// @Router       /user [delete]
 func (api *api) deleteUser(router *httprouter.Router) {
 	router.DELETE("/user", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		token, err := GetParsedToken(r)
@@ -118,6 +161,16 @@ func (api *api) deleteUser(router *httprouter.Router) {
 	})
 }
 
+// getUsernameByID godoc
+// @Summary      get username
+// @Description  get username by providing a user ID
+// @Tags         user
+// @Security Bearer
+// @Param        id path string true "user ID"
+// @Produce      json
+// @Success      200 {object} string
+// @Failure      500
+// @Router       /user/id/{id}/name [get]
 func (api *api) getUsernameByID(router *httprouter.Router) {
 	router.GET("/user/id/:id/name", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		id := ps.ByName("id")
@@ -131,6 +184,17 @@ func (api *api) getUsernameByID(router *httprouter.Router) {
 	})
 }
 
+// getUsers godoc
+// @Summary      get users
+// @Description  parses provided jwt and lists all users if admin or only lists users from groups the calling user is a member of
+// @Tags         user
+// @Security Bearer
+// @Param        excludeCaller query bool false "if true exclude calling user from result"
+// @Produce      json
+// @Success      200 {array} ctrl.User
+// @Failure      400
+// @Failure      500
+// @Router       /user-list [get]
 func (api *api) getUsers(router *httprouter.Router) {
 	router.GET("/user-list", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		token, err := GetParsedToken(r)
@@ -166,6 +230,16 @@ func (api *api) getUsers(router *httprouter.Router) {
 	})
 }
 
+// getSessions godoc
+// @Summary      get user's sessions
+// @Description  get user's sessions by parsing provided jwt token
+// @Tags         user
+// @Security Bearer
+// @Produce      json
+// @Success      200 {array} object
+// @Failure      400
+// @Failure      500
+// @Router       /sessions [get]
 func (api *api) getSessions(router *httprouter.Router) {
 	router.GET("/sessions", func(res http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		usertoken, err := GetParsedToken(r)
@@ -193,6 +267,18 @@ func (api *api) getSessions(router *httprouter.Router) {
 	})
 }
 
+// putPassword godoc
+// @Summary      set password for user
+// @Description  set password for user, parses jwt for ID
+// @Tags         user
+// @Security Bearer
+// @Accept       json
+// @Produce      json
+// @Param        message body PasswordRequest true "user password"
+// @Success      200 {object} object
+// @Failure      400
+// @Failure      500
+// @Router       /password [put]
 func (api *api) putPassword(router *httprouter.Router) {
 	router.PUT("/password", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		usertoken, err := GetParsedToken(request)
@@ -241,6 +327,18 @@ func (api *api) putPassword(router *httprouter.Router) {
 	})
 }
 
+// putInfo godoc
+// @Summary      set user info
+// @Description  set user's details, parses jwt for ID
+// @Tags         user
+// @Security Bearer
+// @Accept       json
+// @Produce      json
+// @Param        message body UserInfoRequest true "user details"
+// @Success      200 {object} object
+// @Failure      400
+// @Failure      500
+// @Router       /info [put]
 func (api *api) putInfo(router *httprouter.Router) {
 	router.PUT("/info", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		usertoken, err := GetParsedToken(request)
