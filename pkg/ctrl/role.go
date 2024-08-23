@@ -16,8 +16,6 @@
 
 package ctrl
 
-import "github.com/SENERGY-Platform/user-management/pkg/configuration"
-
 type Role struct {
 	Id          string `json:"id"`
 	Name        string `json:"name"`
@@ -27,14 +25,14 @@ type Role struct {
 	ContainerId string `json:"containerId"`
 }
 
-func GetRoles(conf configuration.Config) (roles []Role, err error) {
-	token, err := EnsureAccess(conf)
-	if err != nil {
-		return
-	}
-	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/roles", &roles)
-	if err != nil {
-		return
-	}
-	return
-}
+//func GetRoles(conf configuration.Config) (roles []Role, err error) {
+//	token, err := EnsureAccess(conf)
+//	if err != nil {
+//		return
+//	}
+//	err = token.GetJSON(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/roles", &roles)
+//	if err != nil {
+//		return
+//	}
+//	return
+//}
