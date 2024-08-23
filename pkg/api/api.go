@@ -23,9 +23,12 @@ import (
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
 	"github.com/julienschmidt/httprouter"
+	"github.com/swaggo/http-swagger"
+	"github.com/swaggo/swag"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -72,6 +75,21 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 	api.getSessions(router)
 	api.putPassword(router)
 	api.putInfo(router)
+	if api.conf.EnableSwaggerUi {
+		router.GET("/swagger/:any", func(res http.ResponseWriter, req *http.Request, p httprouter.Params) {
+			httpSwagger.WrapHandler(res, req)
+		})
+	}
+	router.GET("/doc", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+		doc, err := swag.ReadDoc()
+		if err != nil {
+			http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		doc = strings.Replace(doc, `"host": "",`, "", 1)
+		_, _ = writer.Write([]byte(doc))
+	})
 	return
 }
 
