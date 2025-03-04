@@ -26,7 +26,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
-	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -74,8 +73,6 @@ func (api *api) getRoutes() (router *httprouter.Router) {
 	api.getUsernameByID(router)
 	api.getUsers(router)
 	api.getSessions(router)
-	api.putPassword(router)
-	api.putInfo(router)
 	if api.conf.EnableSwaggerUi {
 		router.GET("/swagger/:any", func(res http.ResponseWriter, req *http.Request, p httprouter.Params) {
 			httpSwagger.WrapHandler(res, req)
@@ -284,134 +281,4 @@ func (api *api) getSessions(router *httprouter.Router) {
 			}
 		}
 	})
-}
-
-// putPassword godoc
-// @Summary      set password for user
-// @Description  set password for user, parses jwt for ID
-// @Tags         user
-// @Security Bearer
-// @Accept       json
-// @Produce      json
-// @Param        message body PasswordRequest true "user password"
-// @Success      200 {object} object
-// @Failure      400
-// @Failure      500
-// @Router       /password [put]
-func (api *api) putPassword(router *httprouter.Router) {
-	router.PUT("/password", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
-		usertoken, err := GetParsedToken(request)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-		passwordRequest := PasswordRequest{}
-		err = json.NewDecoder(request.Body).Decode(&passwordRequest)
-		if err != nil {
-			log.Println("ERROR:", err)
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-		token, err := ctrl.EnsureAccess(api.conf)
-		if err != nil {
-			log.Println("ERROR:", err)
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		r, w := io.Pipe()
-		go func() {
-			defer w.Close()
-			err = json.NewEncoder(w).Encode(map[string]interface{}{
-				"type":      "password",
-				"value":     passwordRequest.Password,
-				"temporary": false,
-			})
-			if err != nil {
-				log.Println("ERROR:", err)
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}()
-		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+usertoken.GetUserId()+"/reset-password", "application/json", r)
-		if err != nil {
-			log.Println("ERROR:", err)
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		res.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(res, resp.Body)
-		if err != nil {
-			log.Println("ERROR: /password io.Copy ", err)
-		}
-	})
-}
-
-// putInfo godoc
-// @Summary      set user info
-// @Description  set user's details, parses jwt for ID
-// @Tags         user
-// @Security Bearer
-// @Accept       json
-// @Produce      json
-// @Param        message body UserInfoRequest true "user details"
-// @Success      200 {object} object
-// @Failure      400
-// @Failure      500
-// @Router       /info [put]
-func (api *api) putInfo(router *httprouter.Router) {
-	router.PUT("/info", func(res http.ResponseWriter, request *http.Request, params httprouter.Params) {
-		usertoken, err := GetParsedToken(request)
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-		infoRequest := UserInfoRequest{}
-		err = json.NewDecoder(request.Body).Decode(&infoRequest)
-		if err != nil {
-			log.Println("ERROR:", err)
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-		token, err := ctrl.EnsureAccess(api.conf)
-		if err != nil {
-			log.Println("ERROR:", err)
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		r, w := io.Pipe()
-		go func() {
-			defer w.Close()
-			err = json.NewEncoder(w).Encode(map[string]interface{}{
-				"firstName": infoRequest.FirstName,
-				"lastName":  infoRequest.LastName,
-				"email":     infoRequest.Email,
-			})
-			if err != nil {
-				log.Println("ERROR:", err)
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}()
-		resp, err := token.Put(api.conf.KeycloakUrl+"/auth/admin/realms/"+api.conf.KeycloakRealm+"/users/"+usertoken.GetUserId(), "application/json", r)
-		if err != nil {
-			log.Println("ERROR:", err)
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		res.WriteHeader(resp.StatusCode)
-		_, err = io.Copy(res, resp.Body)
-		if err != nil {
-			log.Println("ERROR: /info io.Copy ", err)
-		}
-	})
-}
-
-type PasswordRequest struct {
-	Password string `json:"password"`
-}
-
-type UserInfoRequest struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
 }
