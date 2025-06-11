@@ -31,7 +31,6 @@ func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/senergy-platform/analytics-flow-engine",
 			Env: map[string]string{
-				"DEBUG":                 "true",
 				"DRIVER":                "rancher2",
 				"RANCHER2_ENDPOINT":     rancherUrl + "/",
 				"PARSER_API_ENDPOINT":   parserUrl,
@@ -51,6 +50,7 @@ func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
+		//PrintDockerLogs(c, "ANALYTICS-FLOW-ENGINE")
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container analytics-flow-engine", c.Terminate(timeout))
 	}()

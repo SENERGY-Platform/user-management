@@ -64,6 +64,23 @@ func initBrokerExportState(config configuration.Config, user1 ctrl.Token, user2 
 			return
 		}
 		*ids = append(*ids, temp.Id)
+
+		t.Run("check user2", func(t *testing.T) {
+			list := ctrl.ExportListIdWrapper{}
+			err = user2.Impersonate().GetJSON(config.BrokerExportsUrl+"/instances", &list)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if len(list.Instances) != 1 {
+				t.Errorf("%#v", list)
+				return
+			}
+			if list.Instances[0].Id != temp.Id {
+				t.Errorf("%#v", list)
+			}
+		})
+
 	}
 }
 

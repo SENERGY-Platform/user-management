@@ -47,6 +47,7 @@ func PermissionsV2(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (ho
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
+		//PrintDockerLogs(c, "PERMISSIONS_V2")
 		log.Println("DEBUG: remove container permissions-v2", c.Terminate(context.Background()))
 	}()
 

@@ -31,6 +31,22 @@ import (
 	"time"
 )
 
+func PrintDockerLogs(c testcontainers.Container, name string) {
+	if c == nil {
+		return
+	}
+	reader, err2 := c.Logs(context.Background())
+	if err2 != nil {
+		log.Println("ERROR: unable to get container log", name)
+		return
+	}
+	buf := new(strings.Builder)
+	io.Copy(buf, reader)
+	fmt.Println(name + " LOGS: ------------------------------------------")
+	fmt.Println(buf.String())
+	fmt.Println("\n---------------------------------------------------------------")
+}
+
 func getFreePort() (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {

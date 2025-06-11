@@ -17,6 +17,7 @@
 package ctrl
 
 import (
+	devicerepo "github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"log"
 )
@@ -25,6 +26,11 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 	token, err := CreateToken("users-service", userId)
 	if err != nil {
 		log.Println("ERROR: unable to create jwt for userId", userId, err)
+		return err
+	}
+	err, _ = devicerepo.NewClient(conf.DeviceRepositoryUrl, nil).DeleteUser(devicerepo.InternalAdminToken, userId)
+	if err != nil {
+		log.Println("ERROR: devicerepo.DeleteUser()", err)
 		return err
 	}
 	err = DeleteWaitingRoomUser(token, conf)

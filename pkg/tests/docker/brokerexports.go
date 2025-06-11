@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, rancherUrl string) (hostPort string, ipAddress string, err error) {
+func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, rancherUrl string, permv2Url string) (hostPort string, ipAddress string, err error) {
 	log.Println("start kafka2mqtt-manager")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
@@ -41,6 +41,7 @@ func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, ran
 				"RANCHER_URL":        rancherUrl + "/",
 				"RANCHER_ACCESS_KEY": "foo",
 				"RANCHER_SECRET_KEY": "bar",
+				"PERMISSIONS_V2_URL": permv2Url,
 			},
 			ExposedPorts:    []string{"8080/tcp"},
 			WaitingFor:      wait.ForListeningPort("8080/tcp"),
@@ -49,12 +50,14 @@ func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, ran
 		Started: true,
 	})
 	if err != nil {
+		//PrintDockerLogs(c, "KAFKA2MQTT-MANAGER")
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
+		//PrintDockerLogs(c, "KAFKA2MQTT-MANAGER")
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container kafka2mqtt-manager", c.Terminate(timeout))
 	}()

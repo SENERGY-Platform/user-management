@@ -29,21 +29,22 @@ func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, 
 	log.Println("start analytics-serving-service")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-serving-service:dev",
+			Image: "ghcr.io/senergy-platform/analytics-serving-service:prod",
 			Env: map[string]string{
-				"MYSQL_HOST":              mysqlHost,
-				"MYSQL_USER":              "root",
-				"MYSQL_PW":                "secret",
-				"MYSQL_DB":                "mysql",
-				"DOCKER_PULL":             "true",
-				"DRIVER":                  "rancher2",
-				"TRANSFER_IMAGE":          "ghcr.io/senergy-platform/hello-world:test",
-				"RANCHER2_ENDPOINT":       rancherUrl + "/",
-				"RANCHER_ACCESS_KEY":      "foo",
-				"RANCHER_SECRET_KEY":      "bar",
-				"PERMISSION_API_ENDPOINT": permSearchUrl,
-				"API_PORT":                "8080",
-				"INFLUX_DB_HOST":          influxDbHost,
+				"MYSQL_HOST":         mysqlHost,
+				"MYSQL_USER":         "root",
+				"MYSQL_PW":           "secret",
+				"MYSQL_DB":           "mysql",
+				"DOCKER_PULL":        "true",
+				"DRIVER":             "rancher2",
+				"TRANSFER_IMAGE":     "ghcr.io/senergy-platform/hello-world:test",
+				"RANCHER2_ENDPOINT":  rancherUrl + "/",
+				"RANCHER_ACCESS_KEY": "foo",
+				"RANCHER_SECRET_KEY": "bar",
+				"PERMISSION_V2_URL":  permSearchUrl,
+				"API_PORT":           "8080",
+				"SERVER_PORT":        "8080",
+				"INFLUX_DB_HOST":     influxDbHost,
 			},
 			ExposedPorts:    []string{"8080/tcp"},
 			WaitingFor:      wait.ForListeningPort("8080/tcp"),
@@ -52,12 +53,14 @@ func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, 
 		Started: true,
 	})
 	if err != nil {
+		//PrintDockerLogs(c, "ANALYTICS-SERVING-SERVICE")
 		return "", "", err
 	}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
+		//PrintDockerLogs(c, "ANALYTICS-SERVING-SERVICE")
 		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		log.Println("DEBUG: remove container analytics-serving-service", c.Terminate(timeout))
 	}()

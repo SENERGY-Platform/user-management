@@ -18,8 +18,13 @@ package docker
 
 import (
 	"context"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/tests/mocks"
+	"log"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 )
 
@@ -108,7 +113,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	brokerExportsDbUrl := "mongodb://" + brokerExportsDbIp + ":27017"
 
-	_, brokerExportsIp, err := BrokerExports(ctx, wg, brokerExportsDbUrl, rancherUrl)
+	_, brokerExportsIp, err := BrokerExports(ctx, wg, brokerExportsDbUrl, rancherUrl, permissionsV2Url)
 	if err != nil {
 		return config, err
 	}
@@ -122,11 +127,12 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, err
 	}
-	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsUrl, influxIp)
+	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsV2Url, influxIp)
 	if err != nil {
 		return config, err
 	}
 	config.DatabaseExportsUrl = "http://" + dbExportsIp + ":8080"
+	log.Println("DatabaseExportsUrl = ", config.DatabaseExportsUrl)
 
 	_, operatorDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
@@ -202,6 +208,94 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, err
 	}
 	config.NotifierUrl = "http://" + notifierIp + ":5000"
+
+	deviceRepoMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer deviceRepoMock.Close()
+		<-ctx.Done()
+	}()
+	config.DeviceRepositoryUrl = deviceRepoMock.URL
+
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "import-instances",
+		DefaultPermissions: model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"admin": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
+
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "import-types",
+		DefaultPermissions: model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"user1": {Read: true, Write: true, Execute: true, Administrate: true},
+				"user2": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
+
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "export-instances",
+		DefaultPermissions: model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"admin": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
+
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "devices",
+		DefaultPermissions: model.ResourcePermissions{
+			UserPermissions: map[string]model.PermissionsMap{
+				"user1": {Read: true, Write: true, Execute: true, Administrate: true},
+				"user2": {Read: true, Write: true, Execute: true, Administrate: true},
+			},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
+
+	_, err, _ = client.New(permissionsV2Url).SetPermission(client.InternalAdminToken, "devices", "1", client.ResourcePermissions{
+		UserPermissions: map[string]model.PermissionsMap{
+			"admin": {Read: true, Write: true, Execute: true, Administrate: true},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
+
+	_, err, _ = client.New(permissionsV2Url).SetPermission(client.InternalAdminToken, "devices", "2", client.ResourcePermissions{
+		UserPermissions: map[string]model.PermissionsMap{
+			"admin": {Read: true, Write: true, Execute: true, Administrate: true},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
+
+	_, err, _ = client.New(permissionsV2Url).SetPermission(client.InternalAdminToken, "devices", "3", client.ResourcePermissions{
+		UserPermissions: map[string]model.PermissionsMap{
+			"admin": {Read: true, Write: true, Execute: true, Administrate: true},
+		},
+	})
+	if err != nil {
+		return config, err
+	}
 
 	return config, nil
 }

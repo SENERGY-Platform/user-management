@@ -52,6 +52,7 @@ type Config struct {
 	AnalyticsFlowEngineUrl   string
 	AnalyticsPipelineUrl     string
 	NotifierUrl              string
+	DeviceRepositoryUrl      string
 
 	RemoveExportDatabaseMetadataOnUserDelete bool
 
