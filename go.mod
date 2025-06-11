@@ -1,8 +1,8 @@
 module github.com/SENERGY-Platform/user-management
 
-go 1.23
+go 1.24
 
-toolchain go1.23.0
+toolchain go1.24.4
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
@@ -27,7 +27,10 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/SENERGY-Platform/api-docs-provider/lib/client v0.0.3 // indirect
+	github.com/SENERGY-Platform/api-docs-provider/lib/models v0.0.3 // indirect
 	github.com/SENERGY-Platform/developer-notifications v0.0.4 // indirect
+	github.com/SENERGY-Platform/go-base-http-client v0.1.0 // indirect
 	github.com/SENERGY-Platform/models/go v0.0.0-20241007061544-de7132ae94e4 // indirect
 	github.com/SENERGY-Platform/permissions-v2 v0.0.27 // indirect
 	github.com/SENERGY-Platform/service-commons v0.0.0-20250123095636-6dfc659ee43e // indirect

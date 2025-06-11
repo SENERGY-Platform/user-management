@@ -74,7 +74,7 @@ func (this *Consumer) start() error {
 				return
 			default:
 				m, err := r.FetchMessage(this.ctx)
-				if err == io.EOF || err == context.Canceled {
+				if err == io.EOF || errors.Is(err, context.Canceled) {
 					return
 				}
 				if err != nil {

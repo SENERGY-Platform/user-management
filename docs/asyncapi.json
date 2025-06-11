@@ -1,0 +1,71 @@
+{
+    "asyncapi": "3.0.0",
+    "info": {
+        "title": "User-Management",
+        "version": ""
+    },
+    "servers": {
+        "kafka": {
+            "host": "",
+            "protocol": "kafka"
+        }
+    },
+    "channels": {
+        "user": {
+            "address": "user",
+            "messages": {
+                "user-command": {
+                    "$ref": "#/components/messages/CtrlUserCommandMsg"
+                }
+            }
+        }
+    },
+    "operations": {
+        "receive-user-command": {
+            "action": "receive",
+            "channel": {
+                "$ref": "#/channels/user"
+            },
+            "messages": [
+                {
+                    "$ref": "#/channels/user/messages/user-command"
+                }
+            ]
+        },
+        "send-user-command": {
+            "action": "send",
+            "channel": {
+                "$ref": "#/channels/user"
+            },
+            "messages": [
+                {
+                    "$ref": "#/channels/user/messages/user-command"
+                }
+            ]
+        }
+    },
+    "components": {
+        "schemas": {
+            "CtrlUserCommandMsg": {
+                "properties": {
+                    "command": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "messages": {
+            "CtrlUserCommandMsg": {
+                "payload": {
+                    "$ref": "#/components/schemas/CtrlUserCommandMsg"
+                },
+                "name": "UserCommandMsg",
+                "title": "UserCommandMsg"
+            }
+        }
+    }
+}

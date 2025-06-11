@@ -57,6 +57,8 @@ type Config struct {
 	RemoveExportDatabaseMetadataOnUserDelete bool
 
 	EnableSwaggerUi bool
+
+	ApiDocsProviderBaseUrl string
 }
 
 // loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
