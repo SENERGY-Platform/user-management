@@ -26,7 +26,9 @@ import (
 	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -95,7 +97,7 @@ func TestUserDelete(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config, err = docker.Start(ctx, wg, config)
+	config, getDeviceRepoCalls, err := docker.Start(ctx, wg, config)
 	if err != nil {
 		t.Error(err)
 		return
@@ -193,5 +195,10 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check flows state", checkFlowState(config, user1, user2, flowIds))
 		t.Run("check flows engine state", checkFlowEngineState(config, user1, user2, flowEngineIds))
 		t.Run("check notification state", checkNotificationState(config, user1, user2, notificationIds, brokerIds))
+		t.Run("check device-repo call", func(t *testing.T) {
+			if !slices.Contains(getDeviceRepoCalls(), "DELETE /users/"+url.PathEscape(user1.GetUserId())) {
+				t.Errorf("calls = %#v", getDeviceRepoCalls())
+			}
+		})
 	})
 }
