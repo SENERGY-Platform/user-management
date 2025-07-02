@@ -27,8 +27,8 @@ import (
 	"time"
 )
 
-func NewConsumer(ctx context.Context, wg *sync.WaitGroup, broker string, groupid string, topic string, listener func(topic string, msg []byte, t time.Time) error, errorhandler func(err error, consumer *Consumer)) (consumer *Consumer, err error) {
-	consumer = &Consumer{ctx: ctx, wg: wg, groupId: groupid, broker: broker, topic: topic, listener: listener, errorhandler: errorhandler}
+func NewConsumer(ctx context.Context, wg *sync.WaitGroup, broker string, groupid string, topic string, initTopic bool, listener func(topic string, msg []byte, t time.Time) error, errorhandler func(err error, consumer *Consumer)) (consumer *Consumer, err error) {
+	consumer = &Consumer{ctx: ctx, wg: wg, groupId: groupid, broker: broker, topic: topic, listener: listener, errorhandler: errorhandler, initTopic: initTopic}
 	err = consumer.start()
 	return
 }
@@ -43,14 +43,17 @@ type Consumer struct {
 	listener     func(topic string, msg []byte, t time.Time) error
 	errorhandler func(err error, consumer *Consumer)
 	mux          sync.Mutex
+	initTopic    bool
 }
 
-func (this *Consumer) start() error {
+func (this *Consumer) start() (err error) {
 	log.Println("DEBUG: consume topic: \"" + this.topic + "\"")
-	err := InitTopic(this.broker, this.topic)
-	if err != nil {
-		log.Println("ERROR: unable to create topic", err)
-		return err
+	if this.initTopic {
+		err = InitTopic(this.broker, this.topic)
+		if err != nil {
+			log.Println("ERROR: unable to create topic", err)
+			return err
+		}
 	}
 	r := kafka.NewReader(kafka.ReaderConfig{
 		CommitInterval:         0, //synchronous commits

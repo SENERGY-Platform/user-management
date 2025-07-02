@@ -28,5 +28,7 @@
 
 	"DeviceRepositoryUrl": "",
 
-	"RemoveExportDatabaseMetadataOnUserDelete": false
+	"RemoveExportDatabaseMetadataOnUserDelete": false,
+
+	"InitTopics": false
 }

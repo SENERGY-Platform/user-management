@@ -50,7 +50,7 @@ func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.C
 	}
 
 	log.Println("init consumer")
-	_, err = kafka.NewConsumer(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.UserTopic, handler.handleUserCommand, func(err error, c *kafka.Consumer) {
+	_, err = kafka.NewConsumer(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.UserTopic, conf.InitTopics, handler.handleUserCommand, func(err error, c *kafka.Consumer) {
 		log.Println("ERROR: Encountered error on consumer", err.Error())
 	})
 	if err != nil {

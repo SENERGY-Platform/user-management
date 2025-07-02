@@ -59,6 +59,8 @@ type Config struct {
 	EnableSwaggerUi bool
 
 	ApiDocsProviderBaseUrl string
+
+	InitTopics bool
 }
 
 // loads config from json in location and used environment variables (e.g ZookeeperUrl --> ZOOKEEPER_URL)
