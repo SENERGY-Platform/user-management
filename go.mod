@@ -3,7 +3,7 @@ module github.com/SENERGY-Platform/user-management
 go 1.25.0
 
 require (
-	github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.30
+	github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.31
 	github.com/SENERGY-Platform/analytics-pipeline v0.0.30
 	github.com/SENERGY-Platform/api-docs-provider/lib/client v0.0.3
 	github.com/SENERGY-Platform/device-repository v0.2.27
@@ -113,6 +113,6 @@ require (
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 )
