@@ -17,10 +17,8 @@
 package ctrl
 
 import (
-	"errors"
+	"github.com/SENERGY-Platform/analytics-flow-repo-v2/client"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"io"
-	"net/url"
 )
 
 func DeleteAnalyticsFlowRepoUser(token Token, conf configuration.Config) error {
@@ -41,38 +39,22 @@ func DeleteAnalyticsFlowRepoUser(token Token, conf configuration.Config) error {
 }
 
 func deleteAnalyticsFlow(token Token, conf configuration.Config, id string) error {
-	resp, err := token.Impersonate().Delete(conf.AnalyticsFlowRepoUrl+"/flow/"+url.QueryEscape(id), nil)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		temp, _ := io.ReadAll(resp.Body)
-		return errors.New("deleteAnalyticsFlow(): " + string(temp))
-	}
-	return nil
+	_, err := client.NewClient(conf.AnalyticsFlowRepoUrl).DeleteFlow(token.Token, token.GetUserId(), id)
+	return err
 }
 
 func getAnalyticsFlowIds(token Token, config configuration.Config) (ids []string, err error) {
-	temp := FlowList{}
-	//limit=0 -> mongodb: all elements
-	err = token.Impersonate().GetJSON(config.AnalyticsFlowRepoUrl+"/flow?limit=0&offset=0", &temp)
+	ids = []string{}
+
+	flows, _, err := client.NewClient(config.AnalyticsFlowRepoUrl).GetFlows(token.Token, token.GetUserId())
 	if err != nil {
 		return ids, err
 	}
-	for _, element := range temp.Flows {
+
+	for _, element := range flows.Flows {
 		if element.UserId == token.GetUserId() { //filter public flows of other users
-			ids = append(ids, element.Id)
+			ids = append(ids, element.Id.String())
 		}
 	}
 	return ids, err
-}
-
-type Flow struct {
-	UnderscoreIdWrapper
-	UserId string `json:"userId"`
-}
-
-type FlowList struct {
-	Flows []Flow `json:"flows"`
 }

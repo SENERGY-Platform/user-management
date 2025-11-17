@@ -17,6 +17,7 @@
 package tests
 
 import (
+	"github.com/SENERGY-Platform/analytics-flow-repo-v2/client"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
 	"testing"
@@ -95,8 +96,7 @@ func checkFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.To
 			t.Error(ids)
 			return
 		}
-		temp := ctrl.FlowList{}
-		err := user1.Impersonate().GetJSON(config.AnalyticsFlowRepoUrl+"/flow", &temp)
+		temp, _, err := client.NewClient(config.AnalyticsFlowRepoUrl).GetFlows(user1.Token, user1.GetUserId())
 		if err != nil {
 			t.Error(err)
 			return
@@ -106,12 +106,11 @@ func checkFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.To
 			t.Error(temp)
 			return
 		}
-		if temp.Flows[0].Id != ids[2] {
+		if temp.Flows[0].Id.String() != ids[2] {
 			t.Error(temp)
 		}
 
-		temp = ctrl.FlowList{}
-		err = user2.Impersonate().GetJSON(config.AnalyticsFlowRepoUrl+"/flow", &temp)
+		temp, _, err = client.NewClient(config.AnalyticsFlowRepoUrl).GetFlows(user2.Token, user2.GetUserId())
 		if err != nil {
 			t.Error(err)
 			return
@@ -120,10 +119,10 @@ func checkFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.To
 			t.Error(temp)
 			return
 		}
-		if temp.Flows[0].Id != ids[2] {
+		if temp.Flows[0].Id.String() != ids[2] {
 			t.Error(temp)
 		}
-		if temp.Flows[1].Id != ids[3] {
+		if temp.Flows[1].Id.String() != ids[3] {
 			t.Error(temp)
 		}
 	}
