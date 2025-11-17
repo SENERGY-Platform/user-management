@@ -12,6 +12,8 @@ github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.31 h1:WoxnY0SxLwAuJCSVDm
 github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.31/go.mod h1:yERMkZrN/OPB4sLCM3f2aUz8d2Hr5uevRSVe0NiIGDA=
 github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.32 h1:nYROapGoAnuCEeHu3SFYZm7oGO2w+nkp5d4UhIsqvYo=
 github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.32/go.mod h1:yERMkZrN/OPB4sLCM3f2aUz8d2Hr5uevRSVe0NiIGDA=
+github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.33 h1:xhm641jfMLC+dRTfPTeL7sGbXr82YOECzyb9G0w0KCo=
+github.com/SENERGY-Platform/analytics-flow-repo-v2 v0.0.33/go.mod h1:yERMkZrN/OPB4sLCM3f2aUz8d2Hr5uevRSVe0NiIGDA=
 github.com/SENERGY-Platform/analytics-operator-repo-v2 v0.0.7 h1:JcT+8y9B3YDfVG6qQtFUfHPTXu2xMWU/epJ8DAPMug8=
 github.com/SENERGY-Platform/analytics-operator-repo-v2 v0.0.7/go.mod h1:AVwiwyx4U7zJmCffBoYEmk4gen3MWGZ1eQ0WyYv8F5Y=
 github.com/SENERGY-Platform/analytics-pipeline v0.0.30 h1:fD+FgBWicA1s1Ta8QEfSYkMhrK7iW4UyTgclTxNK9Og=
