@@ -7,7 +7,7 @@ toolchain go1.24.4
 require (
 	github.com/SENERGY-Platform/analytics-pipeline v0.0.30
 	github.com/SENERGY-Platform/api-docs-provider/lib/client v0.0.3
-	github.com/SENERGY-Platform/device-repository v0.2.5
+	github.com/SENERGY-Platform/device-repository v0.2.27
 	github.com/SENERGY-Platform/permissions-v2 v0.0.38
 	github.com/SENERGY-Platform/vault-jwt-go v0.0.0-20230904060716-6561ce4b3f75
 	github.com/go-sql-driver/mysql v1.7.1
@@ -28,6 +28,7 @@ require (
 	github.com/SENERGY-Platform/api-docs-provider/lib/models v0.0.3 // indirect
 	github.com/SENERGY-Platform/developer-notifications v0.0.4 // indirect
 	github.com/SENERGY-Platform/go-base-http-client v0.1.0 // indirect
+	github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1 // indirect
 	github.com/SENERGY-Platform/models/go v0.0.0-20241007061544-de7132ae94e4 // indirect
 	github.com/SENERGY-Platform/service-commons v0.0.0-20250903071414-1b34f1965afa // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
