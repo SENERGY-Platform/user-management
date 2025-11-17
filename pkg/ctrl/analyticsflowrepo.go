@@ -53,7 +53,7 @@ func getAnalyticsFlowIds(token Token, config configuration.Config) (ids []string
 
 	for _, element := range flows.Flows {
 		if element.UserId == token.GetUserId() { //filter public flows of other users
-			ids = append(ids, element.Id.String())
+			ids = append(ids, element.Id.Hex())
 		}
 	}
 	return ids, err
