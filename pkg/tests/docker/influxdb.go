@@ -18,11 +18,12 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func InfluxdbContainer(ctx context.Context, wg *sync.WaitGroup) (hostport string, containerip string, err error) {
@@ -40,6 +41,7 @@ func InfluxdbContainer(ctx context.Context, wg *sync.WaitGroup) (hostport string
 				"INFLUXDB_ADMIN_USER":     "root",
 				"INFLUXDB_ADMIN_PASSWORD": "",
 			},
+			AlwaysPullImage: true,
 		},
 		Started: true,
 	})

@@ -17,9 +17,10 @@
 package tests
 
 import (
+	"testing"
+
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
-	"testing"
 )
 
 func initFlowEngineState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
@@ -74,23 +75,25 @@ func checkFlowEngineState(config configuration.Config, user1 ctrl.Token, user2 c
 			t.Error(ids)
 			return
 		}
-		temp := []ctrl.IdWrapper{}
-		err := user1.Impersonate().GetJSON(config.AnalyticsPipelineUrl+"/pipeline", &temp)
+		wrapper := ctrl.DataWrapper[[]ctrl.IdWrapper]{}
+		err := user1.Impersonate().GetJSON(config.AnalyticsPipelineUrl+"/pipeline", &wrapper)
 		if err != nil {
 			t.Error(err)
 			return
 		}
+		temp := wrapper.Data
 		if len(temp) != 0 {
 			t.Error(temp)
 			return
 		}
 
-		temp = []ctrl.IdWrapper{}
-		err = user2.Impersonate().GetJSON(config.AnalyticsPipelineUrl+"/pipeline", &temp)
+		wrapper = ctrl.DataWrapper[[]ctrl.IdWrapper]{}
+		err = user2.Impersonate().GetJSON(config.AnalyticsPipelineUrl+"/pipeline", &wrapper)
 		if err != nil {
 			t.Error(err)
 			return
 		}
+		temp = wrapper.Data
 		if len(temp) != 1 {
 			t.Error(temp)
 			return

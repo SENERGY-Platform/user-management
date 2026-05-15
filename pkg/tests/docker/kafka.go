@@ -19,17 +19,17 @@ package docker
 import (
 	"context"
 	"errors"
+	"log"
+	"sync"
+	"time"
+
 	"github.com/segmentio/kafka-go"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"log"
-	"strconv"
-	"sync"
-	"time"
 )
 
-func Kafka(ctx context.Context, wg *sync.WaitGroup, zookeeperUrl string) (kafkaUrl string, err error) {
-	kafkaport, err := getFreePort()
+func Kafka(ctx context.Context, wg *sync.WaitGroup) (kafkaUrl string, err error) {
+	kafkaport, err := GetFreePort()
 	if err != nil {
 		return kafkaUrl, err
 	}
@@ -41,27 +41,35 @@ func Kafka(ctx context.Context, wg *sync.WaitGroup, zookeeperUrl string) (kafkaU
 	if err != nil {
 		return kafkaUrl, err
 	}
-	kafkaUrl = hostIp + ":" + strconv.Itoa(kafkaport)
+	kafkaUrl = hostIp + ":" + kafkaport
 	log.Println("host ip: ", hostIp)
 	log.Println("host port: ", kafkaport)
 	log.Println("kafkaUrl url: ", kafkaUrl)
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "bitnami/kafka:3.4.0-debian-11-r21",
+			Image: "apache/kafka:3.9.1",
 			Tmpfs: map[string]string{},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("INFO Awaiting socket connections on"),
 				wait.ForListeningPort("9092/tcp"),
 			),
-			ExposedPorts:    []string{strconv.Itoa(kafkaport) + ":9092"},
+			ExposedPorts:    []string{kafkaport + ":9092"},
 			AlwaysPullImage: true,
 			Env: map[string]string{
-				"ALLOW_PLAINTEXT_LISTENER":             "yes",
-				"KAFKA_LISTENERS":                      "OUTSIDE://:9092",
-				"KAFKA_ADVERTISED_LISTENERS":           "OUTSIDE://" + kafkaUrl,
-				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "OUTSIDE:PLAINTEXT",
-				"KAFKA_INTER_BROKER_LISTENER_NAME":     "OUTSIDE",
-				"KAFKA_ZOOKEEPER_CONNECT":              zookeeperUrl,
+				"KAFKA_NODE_ID":                                  "1",
+				"CLUSTER_ID":                                     "IrzuggcFT-mWom7mj7PgtA",
+				"KAFKA_PROCESS_ROLES":                            "controller,broker",
+				"KAFKA_LISTENERS":                                "BROKER://:9092,CONTROLLER://:9093",
+				"KAFKA_CONTROLLER_LISTENER_NAMES":                "CONTROLLER",
+				"KAFKA_INTER_BROKER_LISTENER_NAME":               "BROKER",
+				"KAFKA_LISTENER_SECURITY_PROTOCOL_MAP":           "CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT",
+				"KAFKA_ADVERTISED_LISTENERS":                     "BROKER://" + kafkaUrl,
+				"KAFKA_CONTROLLER_QUORUM_VOTERS":                 "1@localhost:9093",
+				"KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR":         "1",
+				"KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": "1",
+				"KAFKA_TRANSACTION_STATE_LOG_MIN_ISR":            "1",
+				"KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS":         "0",
+				"KAFKA_NUM_PARTITIONS":                           "1",
 			},
 		},
 		Started: true,
@@ -110,44 +118,15 @@ func tryKafkaConn(kafkaUrl string) error {
 		log.Println(err)
 		return err
 	}
+	p, err := conn.ReadPartitions("__consumer_offsets")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	if len(p) == 0 {
+		err = errors.New("__consumer_offsets not ready")
+		return err
+	}
 	log.Println("kafka connection ok")
 	return nil
-}
-
-func Zookeeper(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
-	log.Println("start zookeeper")
-	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "wurstmeister/zookeeper:latest",
-			Tmpfs: map[string]string{"/opt/zookeeper-3.4.13/data": "rw"},
-			WaitingFor: wait.ForAll(
-				wait.ForLog("binding to port"),
-				wait.ForListeningPort("2181/tcp"),
-			),
-			ExposedPorts:    []string{"2181/tcp"},
-			AlwaysPullImage: true,
-		},
-		Started: true,
-	})
-	if err != nil {
-		return "", "", err
-	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		log.Println("DEBUG: remove container zookeeper", c.Terminate(context.Background()))
-	}()
-
-	ipAddress, err = c.ContainerIP(ctx)
-	if err != nil {
-		return "", "", err
-	}
-	temp, err := c.MappedPort(ctx, "2181/tcp")
-	if err != nil {
-		return "", "", err
-	}
-	hostPort = temp.Port()
-
-	return hostPort, ipAddress, err
 }

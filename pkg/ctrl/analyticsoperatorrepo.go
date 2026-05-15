@@ -18,8 +18,9 @@ package ctrl
 
 import (
 	"errors"
-	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"io"
+
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 )
 
 func DeleteAnalyticsOperatorRepoUser(token Token, conf configuration.Config) error {
@@ -39,6 +40,7 @@ func DeleteAnalyticsOperatorRepoUser(token Token, conf configuration.Config) err
 
 func deleteAnalyticsOperator(token Token, conf configuration.Config, ids []string) error {
 	if len(ids) > 0 {
+		conf.GetLogger().Debug("analytics operators to be deleted", "id-count", len(ids), "ids", ids, "user_id", token.GetUserId())
 		resp, err := token.Impersonate().DeleteWithBody(conf.AnalyticsOperatorRepoUrl+"/operator", ids)
 		if err != nil {
 			return err

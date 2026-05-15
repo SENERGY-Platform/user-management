@@ -17,9 +17,10 @@
 package ctrl
 
 import (
+	"log"
+
 	devicerepo "github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"log"
 )
 
 func DeleteUser(userId string, conf configuration.Config) (err error) {
@@ -102,6 +103,10 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 
 type IdWrapper struct {
 	Id string `json:"id"`
+}
+
+type DataWrapper[T any] struct {
+	Data T `json:"data"`
 }
 
 type ExportListIdWrapper struct {

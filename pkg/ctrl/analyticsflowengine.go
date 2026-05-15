@@ -17,7 +17,8 @@
 package ctrl
 
 import (
-	"errors"
+	"fmt"
+
 	"github.com/SENERGY-Platform/analytics-pipeline/client"
 	"github.com/SENERGY-Platform/analytics-pipeline/lib"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
@@ -31,6 +32,7 @@ func DeleteAnalyticsFlowEngineUser(token Token, conf configuration.Config) error
 	if err != nil {
 		return err
 	}
+	conf.GetLogger().Debug("analytics pipelines to be deleted", "id-count", len(ids), "ids", ids, "user_id", token.GetUserId())
 	for _, id := range ids {
 		err = deleteAnalyticsFlowEngine(token, conf, id)
 		if err != nil {
@@ -41,27 +43,26 @@ func DeleteAnalyticsFlowEngineUser(token Token, conf configuration.Config) error
 }
 
 func deleteAnalyticsFlowEngine(token Token, conf configuration.Config, id string) error {
-	r, err, code := client.NewClient(conf.AnalyticsPipelineUrl).DeletePipeline(token.Token, token.GetUserId(), id)
+	err, code := client.NewClient(conf.AnalyticsPipelineUrl).DeletePipeline(token.Token, token.GetUserId(), id)
 	if err != nil || code >= 300 {
-		return errors.New("deleteAnalyticsFlow(): " + r.Message)
+		return fmt.Errorf("unable to delete analytics flow: err=%w, code=%v", err, code)
 	}
 	return nil
 }
 
 func getAnalyticsFlowEngineIds(token Token, config configuration.Config) (ids []string, err error) {
-	temp := []IdWrapper{}
 	limit := 1000
 	first := true
 	c := client.NewClient(config.AnalyticsPipelineUrl)
 	var pipelines lib.PipelinesResponse
 	for first || len(pipelines.Data) == limit {
 		first = false
-		pipelines, err, _ = c.GetPipelines(token.Token, token.GetUserId(), limit, len(temp), "name", true)
+		pipelines, err, _ = c.GetPipelines(token.Token, token.GetUserId(), limit, len(ids), "name", true)
 		if err != nil {
 			return ids, err
 		}
 		for _, p := range pipelines.Data {
-			temp = append(temp, IdWrapper{Id: p.Id})
+			ids = append(ids, p.Id)
 		}
 	}
 	return ids, err

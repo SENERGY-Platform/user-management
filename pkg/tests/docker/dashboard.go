@@ -18,18 +18,19 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func Dashboard(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPort string, ipAddress string, err error) {
 	log.Println("start dashboard")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/dashboard:dev",
+			Image: "ghcr.io/senergy-platform/dashboard:latest",
 			Env: map[string]string{
 				"MONGO_REPL_URL": "mongodb://" + mongoIp + ":27017",
 			},

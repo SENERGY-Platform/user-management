@@ -18,18 +18,19 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRepoUrl string, permissionsUrl string, kafkaUrl string, rancherUrl string, permV2Url string) (hostPort string, ipAddress string, err error) {
 	log.Println("start import-deploy")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/import-deploy:dev",
+			Image: "ghcr.io/senergy-platform/import-deploy:latest",
 			Env: map[string]string{
 				"MONGO_URL":          mongoUrl,
 				"MONGO_REPL_SET":     "false",

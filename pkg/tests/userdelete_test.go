@@ -19,11 +19,6 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"github.com/SENERGY-Platform/user-management/pkg/api"
-	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
-	"github.com/SENERGY-Platform/user-management/pkg/tests/docker"
-	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
 	"net/url"
@@ -32,6 +27,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/SENERGY-Platform/user-management/pkg/api"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
+	"github.com/SENERGY-Platform/user-management/pkg/tests/docker"
+	"github.com/segmentio/kafka-go"
 )
 
 func TestSwagger(t *testing.T) {
@@ -83,6 +84,7 @@ func TestUserDelete(t *testing.T) {
 		t.Fatal("ERROR: unable to load config", err)
 	}
 	config.RemoveExportDatabaseMetadataOnUserDelete = true
+	config.Debug = true
 
 	config.ServerPort, err = docker.GetFreePort()
 	if err != nil {

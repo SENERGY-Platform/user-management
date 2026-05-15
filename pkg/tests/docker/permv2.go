@@ -18,18 +18,19 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func PermissionsV2(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start permissions-v2")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/permissions-v2:dev",
+			Image: "ghcr.io/senergy-platform/permissions-v2:prod",
 			Env: map[string]string{
 				"DEV_NOTIFIER_URL": "",
 				"MONGO_URL":        mongoUrl,

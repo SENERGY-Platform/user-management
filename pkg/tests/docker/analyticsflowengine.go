@@ -18,32 +18,42 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl string, parserUrl string, rancherUrl string, mqttUrl string) (hostPort string, ipAddress string, err error) {
+func AnalyticsFlowEngine(ctx context.Context, wg *sync.WaitGroup, pipelineApiUrl string, parserUrl string, rancherUrl string, mqttUrl string, permUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-flow-engine")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/senergy-platform/analytics-flow-engine",
 			Env: map[string]string{
-				"DRIVER":                "rancher2",
-				"RANCHER2_ENDPOINT":     rancherUrl + "/",
-				"PARSER_API_ENDPOINT":   parserUrl,
-				"PIPELINE_API_ENDPOINT": pipelineApiUrl,
-				"BROKER_ADDRESS":        mqttUrl,
+				"DRIVER":                  "rancher",
+				"RANCHER2_ENDPOINT":       rancherUrl + "/",
+				"PARSER_API_ENDPOINT":     parserUrl,
+				"PIPELINE_API_ENDPOINT":   pipelineApiUrl,
+				"BROKER_ADDRESS":          mqttUrl,
+				"PERMISSION_API_ENDPOINT": permUrl,
+				//"DEBUG":                 "true",
 			},
 			ExposedPorts:    []string{"8000/tcp"},
 			WaitingFor:      wait.ForListeningPort("8000/tcp"),
 			AlwaysPullImage: true,
+			/*
+				LogConsumerCfg: &testcontainers.LogConsumerConfig{
+					Opts:      nil,
+					Consumers: []testcontainers.LogConsumer{LogConsumer{Prefix: "ANALYTICS-FLOW-ENGINE:"}},
+				},
+				//*/
 		},
 		Started: true,
 	})
 	if err != nil {
+		PrintDockerLogs(c, "ANALYTICS-FLOW-ENGINE")
 		return "", "", err
 	}
 	wg.Add(1)

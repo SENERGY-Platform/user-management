@@ -18,24 +18,33 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func AnalyticsPipeline(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPort string, ipAddress string, err error) {
+func AnalyticsPipeline(ctx context.Context, wg *sync.WaitGroup, mongoIp string, permUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-pipeline")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-pipeline:dev",
+			Image: "ghcr.io/senergy-platform/analytics-pipeline:latest",
 			Env: map[string]string{
-				"MONGO": mongoIp,
+				"MONGO":              mongoIp,
+				"PERMISSIONS_V2_URL": permUrl,
 			},
 			ExposedPorts:    []string{"8000/tcp"},
 			WaitingFor:      wait.ForListeningPort("8000/tcp"),
 			AlwaysPullImage: true,
+
+			/*
+				LogConsumerCfg: &testcontainers.LogConsumerConfig{
+					Opts:      nil,
+					Consumers: []testcontainers.LogConsumer{LogConsumer{Prefix: "ANALYTICS-PIPELINE:"}},
+				},
+				//*/
 		},
 		Started: true,
 	})

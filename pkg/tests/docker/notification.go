@@ -18,18 +18,19 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func NotificationContainer(ctx context.Context, wg *sync.WaitGroup, mongoIp string, vaultUrl string, keycloakUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start notifier")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/notifier:dev",
+			Image: "ghcr.io/senergy-platform/notifier:latest",
 			Env: map[string]string{
 				"MONGO_ADDR":   mongoIp,
 				"KEYCLOAK_URL": keycloakUrl,

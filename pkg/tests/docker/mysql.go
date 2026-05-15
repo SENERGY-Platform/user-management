@@ -18,12 +18,13 @@ package docker
 
 import (
 	"context"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func MysqlContainer(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
@@ -39,7 +40,8 @@ func MysqlContainer(ctx context.Context, wg *sync.WaitGroup) (hostPort string, i
 			WaitingFor: wait.ForAll(
 				wait.ForListeningPort("3306/tcp"),
 			),
-			Tmpfs: map[string]string{"/var/lib/mysql": "rw"},
+			Tmpfs:           map[string]string{"/var/lib/mysql": "rw"},
+			AlwaysPullImage: true,
 		},
 		Started: true,
 	})

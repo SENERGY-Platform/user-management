@@ -29,6 +29,7 @@ func DeleteAnalyticsFlowRepoUser(token Token, conf configuration.Config) error {
 	if err != nil {
 		return err
 	}
+	conf.GetLogger().Debug("analytics flows to be deleted", "id-count", len(ids), "ids", ids, "user_id", token.GetUserId())
 	for _, id := range ids {
 		err = deleteAnalyticsFlow(token, conf, id)
 		if err != nil {

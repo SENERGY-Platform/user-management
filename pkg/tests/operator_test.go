@@ -17,65 +17,101 @@
 package tests
 
 import (
+	"slices"
+	"strings"
+	"testing"
+
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
-	"testing"
 )
+
+type Operator struct {
+	Id   string `json:"_id"`
+	Name string `json:"name"`
+}
+type OperatorListResult struct {
+	Operators []Operator `json:"operators"`
+}
 
 func initOperatorState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
 	return func(t *testing.T) {
-		temp := ctrl.UnderscoreIdWrapper{}
 		err := user1.Impersonate().PutJSON(
-			config.AnalyticsOperatorRepoUrl+"/operator",
+			config.AnalyticsOperatorRepoUrl+"/operator/",
 			map[string]interface{}{
 				"name":  "1",
 				"image": "ghcr.io/senergy-platform/hello-world:test",
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
 
-		temp = ctrl.UnderscoreIdWrapper{}
 		err = user1.Impersonate().PutJSON(
-			config.AnalyticsOperatorRepoUrl+"/operator",
+			config.AnalyticsOperatorRepoUrl+"/operator/",
 			map[string]interface{}{
 				"name":  "2",
 				"image": "ghcr.io/senergy-platform/hello-world:test",
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
 
-		temp = ctrl.UnderscoreIdWrapper{}
+		list := []Operator{}
+		temp := OperatorListResult{}
+		err = user1.Impersonate().GetJSON(config.AnalyticsOperatorRepoUrl+"/operator", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for _, item := range temp.Operators {
+			list = append(list, item)
+		}
+
 		err = user2.Impersonate().PutJSON(
-			config.AnalyticsOperatorRepoUrl+"/operator",
+			config.AnalyticsOperatorRepoUrl+"/operator/",
 			map[string]interface{}{
 				"name":  "3",
 				"image": "ghcr.io/senergy-platform/hello-world:test",
 				"pub":   true,
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
-		temp = ctrl.UnderscoreIdWrapper{}
 		err = user2.Impersonate().PutJSON(
-			config.AnalyticsOperatorRepoUrl+"/operator",
+			config.AnalyticsOperatorRepoUrl+"/operator/",
 			map[string]interface{}{
 				"name":  "4",
 				"image": "ghcr.io/senergy-platform/hello-world:test",
 				"pub":   false,
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
+
+		temp = OperatorListResult{}
+		err = user2.Impersonate().GetJSON(config.AnalyticsOperatorRepoUrl+"/operator", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for _, item := range temp.Operators {
+			list = append(list, item)
+		}
+
+		slices.SortFunc(list, func(a, b Operator) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+
+		for _, item := range list {
+			*ids = append(*ids, item.Id)
+		}
+		if len(*ids) != 4 {
+			t.Errorf("%#v", list)
+			t.Error(len(*ids))
+		}
 	}
 }
 
@@ -91,13 +127,9 @@ func checkOperatorState(config configuration.Config, user1 ctrl.Token, user2 ctr
 			t.Error(err)
 			return
 		}
-		//one public operator from user2
-		if len(temp.Operators) != 1 {
-			t.Error(temp)
-			return
-		}
-		if temp.Operators[0].Id != ids[2] {
-			t.Error(temp)
+		//one public operator from user2, but the pub field has lost its relevance for permissions
+		if len(temp.Operators) != 0 {
+			t.Error(len(temp.Operators), temp)
 		}
 
 		temp = ctrl.OperatorList{}
@@ -107,13 +139,12 @@ func checkOperatorState(config configuration.Config, user1 ctrl.Token, user2 ctr
 			return
 		}
 		if len(temp.Operators) != 2 {
-			t.Error(temp)
-			return
+			t.Error(len(temp.Operators), temp)
 		}
-		if temp.Operators[0].Id != ids[2] {
+		if len(temp.Operators) > 0 && temp.Operators[0].Id != ids[2] {
 			t.Error(temp)
 		}
-		if temp.Operators[1].Id != ids[3] {
+		if len(temp.Operators) > 1 && temp.Operators[1].Id != ids[3] {
 			t.Error(temp)
 		}
 	}

@@ -20,15 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"io"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
 )
 
 func PrintDockerLogs(c testcontainers.Container, name string) {
@@ -67,36 +66,6 @@ func GetFreePort() (string, error) {
 		return "", err
 	}
 	return strconv.Itoa(portInt), nil
-}
-
-func Dockerlog(container testcontainers.Container, name string) error {
-	container.FollowOutput(&LogWriter{logger: log.New(os.Stdout, "["+name+"] ", log.LstdFlags)})
-	err := container.StartLogProducer(context.Background())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type LogWriter struct {
-	logger *log.Logger
-}
-
-func (this *LogWriter) Accept(l testcontainers.Log) {
-	this.Write(l.Content)
-}
-
-func (this *LogWriter) Write(p []byte) (n int, err error) {
-	this.logger.Print(string(p))
-	return len(p), nil
-}
-
-func waitretry(timeout time.Duration, f func(ctx context.Context, target wait.StrategyTarget) error) func(ctx context.Context, target wait.StrategyTarget) error {
-	return func(ctx context.Context, target wait.StrategyTarget) (err error) {
-		return retry(timeout, func() error {
-			return f(ctx, target)
-		})
-	}
 }
 
 func retry(timeout time.Duration, f func() error) (err error) {

@@ -17,47 +17,66 @@
 package tests
 
 import (
+	"slices"
+	"strings"
+	"testing"
+
 	"github.com/SENERGY-Platform/analytics-flow-repo-v2/client"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
-	"testing"
 )
+
+type Flow struct {
+	Id   string `json:"_id"`
+	Name string `json:"name"`
+}
+type FlowListResult struct {
+	Flows []Flow `json:"flows"`
+}
 
 func initFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Token, ids *[]string) func(t *testing.T) {
 	return func(t *testing.T) {
-		temp := ctrl.UnderscoreIdWrapper{}
 		err := user1.Impersonate().PutJSON(
-			config.AnalyticsFlowRepoUrl+"/flow",
+			config.AnalyticsFlowRepoUrl+"/flow/",
 			map[string]interface{}{
 				"name": "1",
 				"model": map[string]interface{}{
 					"cells": []interface{}{},
 				},
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
-
-		temp = ctrl.UnderscoreIdWrapper{}
 		err = user1.Impersonate().PutJSON(
-			config.AnalyticsFlowRepoUrl+"/flow",
+			config.AnalyticsFlowRepoUrl+"/flow/",
 			map[string]interface{}{
 				"name": "2",
 				"model": map[string]interface{}{
 					"cells": []interface{}{},
 				},
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
 
-		temp = ctrl.UnderscoreIdWrapper{}
+		list := []Flow{}
+		temp := FlowListResult{}
+		err = user1.Impersonate().GetJSON(config.AnalyticsFlowRepoUrl+"/flow", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		for _, item := range temp.Flows {
+			list = append(list, item)
+		}
+		if len(list) != 2 {
+			t.Error(len(list))
+		}
+
 		err = user2.Impersonate().PutJSON(
-			config.AnalyticsFlowRepoUrl+"/flow",
+			config.AnalyticsFlowRepoUrl+"/flow/",
 			map[string]interface{}{
 				"name": "3",
 				"model": map[string]interface{}{
@@ -66,27 +85,50 @@ func initFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.Tok
 				"share": map[string]interface{}{
 					"list": true,
 				},
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
-		temp = ctrl.UnderscoreIdWrapper{}
 		err = user2.Impersonate().PutJSON(
-			config.AnalyticsFlowRepoUrl+"/flow",
+			config.AnalyticsFlowRepoUrl+"/flow/",
 			map[string]interface{}{
 				"name": "4",
 				"model": map[string]interface{}{
 					"cells": []interface{}{},
 				},
 				"pub": false,
-			}, &temp)
+			}, nil)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		*ids = append(*ids, temp.Id)
+
+		temp = FlowListResult{}
+		err = user2.Impersonate().GetJSON(config.AnalyticsFlowRepoUrl+"/flow", &temp)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(temp.Flows) != 2 {
+			t.Error(len(temp.Flows))
+		}
+		for _, item := range temp.Flows {
+			list = append(list, item)
+		}
+
+		slices.SortFunc(list, func(a, b Flow) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+
+		if len(list) != 4 {
+			t.Error(len(list))
+		}
+
+		for _, item := range list {
+			*ids = append(*ids, item.Id)
+		}
+
 	}
 }
 
@@ -101,13 +143,9 @@ func checkFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.To
 			t.Error(err)
 			return
 		}
-		//one public flow from user2
-		if len(temp.Flows) != 1 {
-			t.Error(temp)
-			return
-		}
-		if temp.Flows[0].Id.String() != ids[2] {
-			t.Error(temp)
+		//one public flow from user2, but the pub field has lost its relevance for permissions
+		if len(temp.Flows) != 0 {
+			t.Error(len(temp.Flows), temp)
 		}
 
 		temp, _, err = client.NewClient(config.AnalyticsFlowRepoUrl).GetFlows(user2.Token, user2.GetUserId())
@@ -119,11 +157,11 @@ func checkFlowState(config configuration.Config, user1 ctrl.Token, user2 ctrl.To
 			t.Error(temp)
 			return
 		}
-		if temp.Flows[0].Id.String() != ids[2] {
-			t.Error(temp)
+		if temp.Flows[0].Id.Hex() != ids[2] {
+			t.Errorf("\nexp=%#v\nact=%#v\nids=%#v\nresult=%#v\n", ids[2], temp.Flows[0].Id.Hex(), ids, temp)
 		}
-		if temp.Flows[1].Id.String() != ids[3] {
-			t.Error(temp)
+		if temp.Flows[1].Id.Hex() != ids[3] {
+			t.Errorf("\nexp=%#v\nact=%#v\nids=%#v\nresult=%#v\n", ids[3], temp.Flows[1].Id.Hex(), ids, temp)
 		}
 	}
 }

@@ -18,14 +18,15 @@ package docker
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
-	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
-	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"github.com/SENERGY-Platform/user-management/pkg/tests/mocks"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"sync"
+
+	"github.com/SENERGY-Platform/permissions-v2/pkg/client"
+	"github.com/SENERGY-Platform/permissions-v2/pkg/model"
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/tests/mocks"
 )
 
 func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration.Config) (config configuration.Config, getDeviceRepoCalls func() []string, err error) {
@@ -37,13 +38,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		}
 	}()
 
-	_, zkIp, err := Zookeeper(ctx, wg)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	zookeeperUrl := zkIp + ":2181"
-
-	config.KafkaBootstrap, err = Kafka(ctx, wg, zookeeperUrl)
+	config.KafkaBootstrap, err = Kafka(ctx, wg)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
@@ -101,6 +96,57 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	permissionsV2Url := "http://" + permV2Ip + ":8080"
 
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "devices",
+		DefaultPermissions: model.ResourcePermissions{
+			GroupPermissions: map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+			RolePermissions:  map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+		},
+	})
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "analytics-pipelines",
+		DefaultPermissions: model.ResourcePermissions{
+			GroupPermissions: map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+			RolePermissions:  map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+		},
+	})
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "analytics-operators",
+		DefaultPermissions: model.ResourcePermissions{
+			GroupPermissions: map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+			RolePermissions:  map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+		},
+	})
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "analytics-flows",
+		DefaultPermissions: model.ResourcePermissions{
+			GroupPermissions: map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+			RolePermissions:  map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+		},
+	})
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	_, err, _ = client.New(permissionsV2Url).SetTopic(client.InternalAdminToken, client.Topic{
+		Id: "import-instances",
+		DefaultPermissions: model.ResourcePermissions{
+			GroupPermissions: map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+			RolePermissions:  map[string]model.PermissionsMap{"admin": {Read: true, Write: true, Execute: true, Administrate: true}},
+		},
+	})
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+
 	_, importsIp, err := Imports(ctx, wg, importsDbUrl, importRepoUrl, permissionsUrl, config.KafkaBootstrap, rancherUrl, permissionsV2Url)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
@@ -127,42 +173,44 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
-	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsV2Url, influxIp)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	config.DatabaseExportsUrl = "http://" + dbExportsIp + ":8080"
-	log.Println("DatabaseExportsUrl = ", config.DatabaseExportsUrl)
 
 	_, operatorDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
-	_, operatorIp, err := AnalyticsOperatorRepo(ctx, wg, operatorDbIp)
+	_, operatorIp, err := AnalyticsOperatorRepo(ctx, wg, operatorDbIp, permissionsV2Url)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
-	config.AnalyticsOperatorRepoUrl = "http://" + operatorIp + ":5000"
+	config.AnalyticsOperatorRepoUrl = "http://" + operatorIp + ":8000"
 
 	_, flowDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
-	_, flowIp, err := AnalyticsFlowRepo(ctx, wg, flowDbIp)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	config.AnalyticsFlowRepoUrl = "http://" + flowIp + ":5000"
 
 	_, pipelineDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
-	_, pipelineIp, err := AnalyticsPipeline(ctx, wg, pipelineDbIp)
+	_, pipelineIp, err := AnalyticsPipeline(ctx, wg, pipelineDbIp, permissionsV2Url)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
 	config.AnalyticsPipelineUrl = "http://" + pipelineIp + ":8000"
+
+	_, flowIp, err := AnalyticsFlowRepo(ctx, wg, flowDbIp, config.AnalyticsOperatorRepoUrl, permissionsV2Url, config.AnalyticsPipelineUrl)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	config.AnalyticsFlowRepoUrl = "http://" + flowIp + ":8080"
+
+	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsV2Url, influxIp, config.KafkaBootstrap, config.ImportsDeploymentUrl, config.AnalyticsPipelineUrl)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	config.DatabaseExportsUrl = "http://" + dbExportsIp + ":8080"
+	log.Println("DatabaseExportsUrl = ", config.DatabaseExportsUrl)
 
 	parserMockUrl, err := LocalUrlToDockerUrl(mocks.AnalyticsParserMock(ctx, wg))
 	if err != nil {
@@ -174,7 +222,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, getDeviceRepoCalls, err
 	}
 
-	_, engineIp, err := AnalyticsFlowEngine(ctx, wg, config.AnalyticsPipelineUrl, parserMockUrl, rancherUrl, "tcp://"+mqttIp+":1883")
+	_, engineIp, err := AnalyticsFlowEngine(ctx, wg, config.AnalyticsPipelineUrl, parserMockUrl, rancherUrl, "tcp://"+mqttIp+":1883", permissionsV2Url)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}

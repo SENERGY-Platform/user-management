@@ -18,28 +18,37 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPort string, ipAddress string, err error) {
+func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string, permUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-operator-repo")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-operator-repo:dev",
+			Image: "ghcr.io/senergy-platform/analytics-operator-repo-v2:latest",
 			Env: map[string]string{
-				"MONGO_ADDR": mongoIp,
+				"MONGO_URL":          mongoIp,
+				"PERMISSIONS_V2_URL": permUrl,
 			},
-			ExposedPorts:    []string{"5000/tcp"},
-			WaitingFor:      wait.ForListeningPort("5000/tcp"),
+			ExposedPorts:    []string{"8000/tcp"},
+			WaitingFor:      wait.ForListeningPort("8000/tcp"),
 			AlwaysPullImage: true,
+			/*
+				LogConsumerCfg: &testcontainers.LogConsumerConfig{
+					Opts:      nil,
+					Consumers: []testcontainers.LogConsumer{LogConsumer{Prefix: "ANALYTICS-OPERATOR-REPO:"}},
+				},
+				//*/
 		},
 		Started: true,
 	})
 	if err != nil {
+		PrintDockerLogs(c, "ANALYTICS-OPERATOR-REPO")
 		return "", "", err
 	}
 	wg.Add(1)
@@ -54,7 +63,7 @@ func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp stri
 	if err != nil {
 		return "", "", err
 	}
-	temp, err := c.MappedPort(ctx, "5000/tcp")
+	temp, err := c.MappedPort(ctx, "8000/tcp")
 	if err != nil {
 		return "", "", err
 	}

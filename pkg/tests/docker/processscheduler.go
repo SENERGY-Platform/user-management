@@ -18,18 +18,19 @@ package docker
 
 import (
 	"context"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func ProcessScheduler(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start process-scheduler")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/process-scheduler:dev",
+			Image: "ghcr.io/senergy-platform/process-scheduler:latest",
 			Env: map[string]string{
 				"MONGO_URL": mongoUrl,
 			},

@@ -20,14 +20,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"github.com/golang-jwt/jwt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
+	"reflect"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/golang-jwt/jwt"
 
 	"net/url"
 )
@@ -219,7 +222,7 @@ func (this JwtImpersonate) GetJSON(url string, result interface{}) (err error) {
 	}
 	err = json.Unmarshal(payload, result)
 	if err != nil {
-		log.Println("ERROR:", string(payload))
+		slog.Error("unable to unmarshal response from json", "error", err, "payload", string(payload), "target", reflect.TypeOf(result).Name())
 		debug.PrintStack()
 	}
 	return
