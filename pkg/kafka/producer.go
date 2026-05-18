@@ -18,10 +18,7 @@ package kafka
 
 import (
 	"context"
-	"io"
-	"log"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -41,12 +38,8 @@ func NewProducer(kafkaUrl string, topic string, debug bool) (*Producer, error) {
 }
 
 func GetKafkaWriter(broker string, topic string, debug bool) (writer *kafka.Writer, err error) {
-	var logger *log.Logger
-	if debug {
-		logger = log.New(os.Stdout, "[KAFKA-PRODUCER] ", log.LstdFlags)
-	} else {
-		logger = log.New(io.Discard, "", 0)
-	}
+	logger := slog.NewLogLogger(slog.Default().Handler(), slog.LevelDebug)
+	logger.SetPrefix("[KAFKA-PRODUCER] ")
 	writer = &kafka.Writer{
 		Addr:        kafka.TCP(broker),
 		Topic:       topic,

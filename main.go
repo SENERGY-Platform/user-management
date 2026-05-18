@@ -48,9 +48,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	wg := &sync.WaitGroup{}
-	
+
 	eventHandler, err := ctrl.InitEventConn(ctx, wg, conf)
 	if err != nil {
+		conf.GetLogger().Error("FATAL: unable to start event connection", "error", err)
 		log.Fatal("ERROR: unable to start event connection", err)
 		return
 	}
@@ -69,7 +70,7 @@ func main() {
 		shutdown := make(chan os.Signal, 1)
 		signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 		sig := <-shutdown
-		log.Println("received shutdown signal", sig)
+		conf.GetLogger().Info("shutdown signal received", "signal", sig)
 		shutdownTime = time.Now()
 		cancel()
 	}()
@@ -82,7 +83,7 @@ func main() {
 	}
 
 	wg.Wait()
-	log.Println("Shutdown complete, took", time.Since(shutdownTime))
+	conf.GetLogger().Info("Shutdown complete", "needed-time", time.Since(shutdownTime))
 }
 
 func PublishAsyncApiDoc(conf configuration.Config) error {

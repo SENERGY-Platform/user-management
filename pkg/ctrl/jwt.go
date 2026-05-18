@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"log/slog"
 	"net/http"
 	"reflect"
@@ -251,20 +250,20 @@ func EnsureAccess(conf configuration.Config) (token JwtImpersonate, err error) {
 	}
 
 	if openid.RefreshToken != "" && openid.RefreshExpiresIn-conf.AuthExpirationTimeBuffer < duration {
-		log.Println("refresh token", openid.RefreshExpiresIn, duration)
+		conf.GetLogger().Debug("refresh token", "expires_in", openid.RefreshExpiresIn, "duration", duration)
 		err = refreshOpenidToken(openid, conf)
 		if err != nil {
-			log.Println("WARNING: unable to use refreshtoken", err)
+			conf.GetLogger().Warn("unable to use refreshtoken", "error", err)
 		} else {
 			token = JwtImpersonate{Token: "Bearer " + openid.AccessToken}
 			return
 		}
 	}
 
-	log.Println("get new access token")
+	conf.GetLogger().Debug("get new access token")
 	err = getOpenidToken(openid, conf)
 	if err != nil {
-		log.Println("ERROR: unable to get new access token", err)
+		conf.GetLogger().Error("unable to get new access token", "error", err)
 		openid = &OpenidToken{}
 	}
 	token = JwtImpersonate{Token: "Bearer " + openid.AccessToken}
@@ -281,13 +280,13 @@ func getOpenidToken(token *OpenidToken, conf configuration.Config) (err error) {
 
 	if err != nil {
 		debug.PrintStack()
-		log.Println("ERROR: getOpenidToken::PostForm()", err)
+		conf.GetLogger().Error("ERROR: getOpenidToken::PostForm()", "error", err)
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Println("ERROR: getOpenidToken()", resp.StatusCode, string(body))
 		err = errors.New("access denied")
+		conf.GetLogger().Error("ERROR: getOpenidToken()", "error", err, "status", resp.Status, "body", string(body))
 		resp.Body.Close()
 		return
 	}
@@ -310,8 +309,8 @@ func refreshOpenidToken(token *OpenidToken, conf configuration.Config) (err erro
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		log.Println("ERROR: refreshOpenidToken()", resp.StatusCode, string(body))
 		err = errors.New("access denied")
+		conf.GetLogger().Error("ERROR: refreshOpenidToken()", "error", err, "status", resp.Status, "body", string(body))
 		resp.Body.Close()
 		return
 	}

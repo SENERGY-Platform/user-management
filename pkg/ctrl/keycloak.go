@@ -18,10 +18,10 @@ package ctrl
 
 import (
 	"fmt"
-	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 )
 
 type User struct {
@@ -83,12 +83,12 @@ func GetUserById(id string, conf configuration.Config) (user User, err error) {
 func DeleteKeycloakUser(id string, conf configuration.Config) (err error) {
 	token, err := EnsureAccess(conf)
 	if err != nil {
-		log.Println("ERROR: unable to ensure access", err)
+		conf.GetLogger().Error("unable to ensure access", "error", err)
 		return err
 	}
 	resp, err := token.Delete(conf.KeycloakUrl+"/auth/admin/realms/"+conf.KeycloakRealm+"/users/"+url.QueryEscape(id), nil)
 	if err != nil || (resp != nil && resp.StatusCode == http.StatusNotFound) {
-		log.Println("WARNING: user dosnt exist; command will be ignored")
+		conf.GetLogger().Warn("user does not exist; command will be ignored", "user_id", id)
 		err = nil
 	}
 	return err

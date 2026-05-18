@@ -18,7 +18,6 @@ package ctrl
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
@@ -44,7 +43,7 @@ func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.C
 		conf: conf,
 	}
 
-	log.Println("init producer")
+	conf.GetLogger().Info("init producer", "topic", conf.UserTopic)
 	handler.usersProducer, err = kafka.NewProducer(conf.KafkaBootstrap, conf.UserTopic, conf.Debug)
 	if err != nil {
 		return handler, err
@@ -63,7 +62,7 @@ func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.C
 func (handler *EventHandler) sendUsersEvent(key string, command interface{}) error {
 	payload, err := json.Marshal(command)
 	if err != nil {
-		log.Println("ERROR: event marshaling:", err)
+		handler.conf.GetLogger().Error("event marshaling", "error", err)
 		return err
 	}
 	return handler.usersProducer.Produce([]byte(key), payload)
@@ -84,7 +83,7 @@ func (handler *EventHandler) DeleteUser(id string) error {
 }
 
 func (handler *EventHandler) handleUserCommand(_ string, msg []byte, _ time.Time) (err error) {
-	log.Println(handler.conf.UserTopic, string(msg))
+	handler.conf.GetLogger().Debug("handle user command", "topic", handler.conf.UserTopic, "msg", string(msg))
 	command := UserCommandMsg{}
 	err = json.Unmarshal(msg, &command)
 	if err != nil {

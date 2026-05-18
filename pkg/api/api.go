@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -52,7 +53,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup, conf configuration.Config, e
 		eventHandler: eventHandler,
 		conf:         conf,
 	}
-	log.Println("start server on port: ", conf.ServerPort)
+	conf.GetLogger().Info("start server on", "port", conf.ServerPort)
 	httpHandler := apiInstance.getRoutes()
 	corsHandler := util.NewCors(httpHandler)
 	router := accesslog.New(corsHandler)
@@ -299,7 +300,7 @@ func (api *api) getSessions(router *httprouter.Router) {
 			res.Header().Set("Content-Type", "application/json")
 			err = json.NewEncoder(res).Encode(result)
 			if err != nil {
-				log.Println("ERROR: unable to respond", err)
+				slog.Error("unable to respond", "error", err)
 			}
 		}
 	})

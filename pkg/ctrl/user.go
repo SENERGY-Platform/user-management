@@ -17,8 +17,6 @@
 package ctrl
 
 import (
-	"log"
-
 	devicerepo "github.com/SENERGY-Platform/device-repository/lib/client"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 )
@@ -26,76 +24,76 @@ import (
 func DeleteUser(userId string, conf configuration.Config) (err error) {
 	token, err := CreateToken("users-service", userId)
 	if err != nil {
-		log.Println("ERROR: unable to create jwt for userId", userId, err)
+		conf.GetLogger().Error("unable to create jwt for userId", "userId", userId, "error", err)
 		return err
 	}
 	err, _ = devicerepo.NewClient(conf.DeviceRepositoryUrl, nil).DeleteUser(devicerepo.InternalAdminToken, userId)
 	if err != nil {
-		log.Println("ERROR: devicerepo.DeleteUser()", err)
+		conf.GetLogger().Error("unable to delete user from device-repository", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteWaitingRoomUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteWaitingRoomUser()", err)
+		conf.GetLogger().Error("unable to delete user from waiting-room", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteDashboardUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteDashboardUser()", err)
+		conf.GetLogger().Error("unable to delete user from dashboard-service", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteProcessSchedulerUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteProcessSchedulerUser()", err)
+		conf.GetLogger().Error("unable to delete user from process-scheduler", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteImportsUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteImportsUser()", err)
+		conf.GetLogger().Error("unable to delete user from imports-service", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteBrokerExportsUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteBrokerExportsUser()", err)
+		conf.GetLogger().Error("unable to delete user from broker-exports-service", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteDatabaseExportsUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteDatabaseExportsUser()", err)
+		conf.GetLogger().Error("unable to delete user from database-exports-service", "userId", userId, "error", err)
 		return err
 	}
 
 	if conf.RemoveExportDatabaseMetadataOnUserDelete {
 		err = DeleteExportDatabasesUser(token, conf)
 		if err != nil {
-			log.Println("ERROR: DeleteExportDatabasesUser()", err)
+			conf.GetLogger().Error("unable to delete user from export-databases-service", "userId", userId, "error", err)
 			return err
 		}
 	}
 
 	err = DeleteAnalyticsOperatorRepoUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteAnalyticsOperatorRepoUser()", err)
+		conf.GetLogger().Error("unable to delete user from analytics-operator-repo", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteAnalyticsFlowRepoUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteAnalyticsFlowRepoUser()", err)
+		conf.GetLogger().Error("unable to delete user from analytics-flow-repo", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteAnalyticsFlowEngineUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteAnalyticsFlowEngineUser()", err)
+		conf.GetLogger().Error("unable to delete user from analytics-flow-engine", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteNotificationUser(token, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteNotificationUser()", err)
+		conf.GetLogger().Error("unable to delete user from notification-service", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteKeycloakUser(userId, conf)
 	if err != nil {
-		log.Println("ERROR: DeleteKeycloakUser()", err)
+		conf.GetLogger().Error("unable to delete user from keycloak", "userId", userId, "error", err)
 		return err
 	}
 	return nil
