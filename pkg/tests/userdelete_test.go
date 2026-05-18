@@ -31,6 +31,7 @@ import (
 	"github.com/SENERGY-Platform/user-management/pkg/api"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
 	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
+	kafka2 "github.com/SENERGY-Platform/user-management/pkg/kafka"
 	"github.com/SENERGY-Platform/user-management/pkg/tests/docker"
 	"github.com/segmentio/kafka-go"
 )
@@ -49,17 +50,18 @@ func TestSwagger(t *testing.T) {
 	}
 
 	wg := &sync.WaitGroup{}
-	defer log.Println("done waiting")
+	defer log.Println("done waiting in TestSwagger")
 	defer wg.Wait()
-	defer log.Println("wait for wg")
+	defer log.Println("wait for wg in TestSwagger")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	_, err = api.Start(ctx, config)
+	err = api.Start(ctx, wg, config, nil)
 	if err != nil {
 		t.Error(err)
 		return
 	}
+	time.Sleep(time.Second)
 	t.Run("swagger", func(t *testing.T) {
 		resp, err := http.Get("http://localhost:" + config.ServerPort + "/doc")
 		if err != nil {
@@ -93,9 +95,9 @@ func TestUserDelete(t *testing.T) {
 	}
 
 	wg := &sync.WaitGroup{}
-	defer log.Println("done waiting")
+	defer log.Println("done waiting in TestUserDelete")
 	defer wg.Wait()
-	defer log.Println("wait for wg")
+	defer log.Println("wait for wg in TestUserDelete")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -105,7 +107,19 @@ func TestUserDelete(t *testing.T) {
 		return
 	}
 
-	_, err = api.Start(ctx, config)
+	err = kafka2.InitTopic(config.KafkaBootstrap, config.UserTopic)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	eventHandler, err := ctrl.InitEventConn(ctx, wg, config)
+	if err != nil {
+		log.Fatal("ERROR: unable to start event connection", err)
+		return
+	}
+
+	err = api.Start(ctx, wg, config, eventHandler)
 	if err != nil {
 		t.Error(err)
 		return
@@ -158,9 +172,11 @@ func TestUserDelete(t *testing.T) {
 		Topic:       config.UserTopic,
 		MaxAttempts: 10,
 		Logger:      log.New(os.Stdout, "[TEST-KAFKA-PRODUCER] ", 0),
+		ErrorLogger: log.New(os.Stdout, "[TEST-KAFKA-PRODUCER-ERROR] ", 0),
 	}
 
 	t.Run("remove user1", func(t *testing.T) {
+		config.GetLogger().Info("produce cmd to kafka", "topic", config.UserTopic, "key", user1.GetUserId())
 		cmd := ctrl.UserCommandMsg{
 			Command: "DELETE",
 			Id:      user1.GetUserId(),

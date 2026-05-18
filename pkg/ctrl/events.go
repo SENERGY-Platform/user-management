@@ -18,11 +18,12 @@ package ctrl
 
 import (
 	"context"
-	"github.com/SENERGY-Platform/user-management/pkg/configuration"
-	"github.com/SENERGY-Platform/user-management/pkg/kafka"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/kafka"
 
 	"encoding/json"
 	"errors"
@@ -49,14 +50,12 @@ func InitEventConn(ctx context.Context, wg *sync.WaitGroup, conf configuration.C
 		return handler, err
 	}
 
-	log.Println("init consumer")
+	conf.GetLogger().Info("init consumer", "topic", conf.UserTopic)
 	_, err = kafka.NewConsumer(ctx, wg, conf.KafkaBootstrap, conf.ConsumerGroup, conf.UserTopic, conf.InitTopics, handler.handleUserCommand, func(err error, c *kafka.Consumer) {
-		log.Println("ERROR: Encountered error on consumer", err.Error())
+		conf.GetLogger().Error("Encountered error on consumer", "error", err)
 	})
 	if err != nil {
-		log.Println("WARN: problem initializing kafka connection: ", err)
-		log.Println("WARN: client will retry until successful")
-		err = nil
+		return nil, err
 	}
 	return
 }

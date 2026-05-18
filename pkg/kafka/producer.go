@@ -18,15 +18,18 @@ package kafka
 
 import (
 	"context"
-	"github.com/segmentio/kafka-go"
 	"io"
 	"log"
+	"log/slog"
 	"os"
 	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type Producer struct {
 	writer *kafka.Writer
+	topic  string
 }
 
 func NewProducer(kafkaUrl string, topic string, debug bool) (*Producer, error) {
@@ -34,7 +37,7 @@ func NewProducer(kafkaUrl string, topic string, debug bool) (*Producer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Producer{writer: writer}, nil
+	return &Producer{writer: writer, topic: topic}, nil
 }
 
 func GetKafkaWriter(broker string, topic string, debug bool) (writer *kafka.Writer, err error) {
@@ -57,6 +60,7 @@ func GetKafkaWriter(broker string, topic string, debug bool) (writer *kafka.Writ
 }
 
 func (this *Producer) Produce(key []byte, msg []byte) error {
+	slog.Debug("produce message to kafka", "topic", this.topic, "key", string(key), "msg", string(msg))
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	return this.writer.WriteMessages(
 		ctx,

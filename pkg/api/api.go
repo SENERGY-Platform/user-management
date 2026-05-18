@@ -19,6 +19,15 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"runtime/debug"
+	"strings"
+	"sync"
+
+	"github.com/SENERGY-Platform/service-commons/pkg/accesslog"
 	_ "github.com/SENERGY-Platform/user-management/docs"
 	"github.com/SENERGY-Platform/user-management/pkg/api/util"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
@@ -26,10 +35,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/swaggo/http-swagger"
 	"github.com/swaggo/swag"
-	"log"
-	"net/http"
-	"strings"
-	"sync"
 )
 
 type api struct {
@@ -37,13 +42,12 @@ type api struct {
 	conf         configuration.Config
 }
 
-func Start(ctx context.Context, conf configuration.Config) (wg *sync.WaitGroup, err error) {
-	wg = &sync.WaitGroup{}
-
-	eventHandler, err := ctrl.InitEventConn(ctx, wg, conf)
-	if err != nil {
-		return
-	}
+func Start(ctx context.Context, wg *sync.WaitGroup, conf configuration.Config, eventHandler *ctrl.EventHandler) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprint(r))
+		}
+	}()
 	apiInstance := &api{
 		eventHandler: eventHandler,
 		conf:         conf,
@@ -51,8 +55,26 @@ func Start(ctx context.Context, conf configuration.Config) (wg *sync.WaitGroup, 
 	log.Println("start server on port: ", conf.ServerPort)
 	httpHandler := apiInstance.getRoutes()
 	corsHandler := util.NewCors(httpHandler)
-	logg := util.NewLogger(corsHandler)
-	go func() { log.Println(http.ListenAndServe(":"+conf.ServerPort, logg)) }()
+	router := accesslog.New(corsHandler)
+
+	server := &http.Server{Addr: ":" + conf.ServerPort, Handler: router}
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		conf.GetLogger().Info("listening on " + server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			debug.PrintStack()
+			conf.GetLogger().Error("fatal error while starting api", "error", err)
+			log.Fatal("FATAL:", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		conf.GetLogger().Info("api shutdown", "shutdown_return", server.Shutdown(context.Background()))
+	}()
+
 	return
 }
 

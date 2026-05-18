@@ -19,10 +19,14 @@ package main
 import (
 	"context"
 	"flag"
+	"sync"
+
 	"github.com/SENERGY-Platform/api-docs-provider/lib/client"
 	"github.com/SENERGY-Platform/user-management/docs"
 	"github.com/SENERGY-Platform/user-management/pkg/api"
 	"github.com/SENERGY-Platform/user-management/pkg/configuration"
+	"github.com/SENERGY-Platform/user-management/pkg/ctrl"
+
 	"log"
 	"net/http"
 	"os"
@@ -42,7 +46,16 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	wg, err := api.Start(ctx, conf)
+
+	wg := &sync.WaitGroup{}
+	
+	eventHandler, err := ctrl.InitEventConn(ctx, wg, conf)
+	if err != nil {
+		log.Fatal("ERROR: unable to start event connection", err)
+		return
+	}
+
+	err = api.Start(ctx, wg, conf, eventHandler)
 	if err != nil {
 		cancel()
 		if wg != nil {
