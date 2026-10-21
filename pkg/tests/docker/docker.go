@@ -53,15 +53,6 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.WaitingRoomUrl = "http://" + wrIp + ":8080"
 
-	_, psDbIp, err := MongoContainer(ctx, wg)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	_, psIp, err := ProcessScheduler(ctx, wg, "mongodb://"+psDbIp+":27017")
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	config.ProcessSchedulerUrl = "http://" + psIp + ":8080"
 	_, dDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
 		return config, getDeviceRepoCalls, err

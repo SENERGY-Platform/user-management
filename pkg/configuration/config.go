@@ -47,7 +47,7 @@ type Config struct {
 	ConsumerGroup            string
 	Debug                    bool
 	WaitingRoomUrl           string
-	ProcessSchedulerUrl      string
+	AutomationEngineUrl      string
 	DashboardServiceUrl      string
 	ImportsDeploymentUrl     string
 	BrokerExportsUrl         string

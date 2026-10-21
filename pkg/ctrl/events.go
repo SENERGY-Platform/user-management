@@ -76,6 +76,12 @@ func (handler *EventHandler) DeleteUser(id string) error {
 	if user.Id != id {
 		return errors.New("no matching user found")
 	}
+	// dry run before the delete command is published; the automation-engine reads the topic as well
+	err = CheckAutomationEngineUser(id, handler.conf)
+	if err != nil {
+		handler.conf.GetLogger().Warn("user deletion rejected by automation-engine dry run", "userId", id, "error", err)
+		return err
+	}
 	return handler.sendUsersEvent("DELETE_"+id, UserCommandMsg{
 		Command: "DELETE",
 		Id:      id,

@@ -27,6 +27,12 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 		conf.GetLogger().Error("unable to create jwt for userId", "userId", userId, "error", err)
 		return err
 	}
+	// first, so that a deletion the engine rejects (409) leaves the user in all other services
+	err = DeleteAutomationEngineUser(userId, conf)
+	if err != nil {
+		conf.GetLogger().Error("unable to delete user from automation-engine", "userId", userId, "error", err)
+		return err
+	}
 	err, _ = devicerepo.NewClient(conf.DeviceRepositoryUrl, nil).DeleteUser(devicerepo.InternalAdminToken, userId)
 	if err != nil {
 		conf.GetLogger().Error("unable to delete user from device-repository", "userId", userId, "error", err)
@@ -40,11 +46,6 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 	err = DeleteDashboardUser(token, conf)
 	if err != nil {
 		conf.GetLogger().Error("unable to delete user from dashboard-service", "userId", userId, "error", err)
-		return err
-	}
-	err = DeleteProcessSchedulerUser(token, conf)
-	if err != nil {
-		conf.GetLogger().Error("unable to delete user from process-scheduler", "userId", userId, "error", err)
 		return err
 	}
 	err = DeleteImportsUser(token, conf)

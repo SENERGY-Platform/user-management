@@ -17,7 +17,7 @@
 	"Debug": false,
 
 	"WaitingRoomUrl": "",
-	"ProcessSchedulerUrl": "",
+	"AutomationEngineUrl": "",
 	"DashboardServiceUrl": "",
 	"ImportsDeploymentUrl": "",
 	"BrokerExportsUrl": "",

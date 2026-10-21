@@ -107,6 +107,10 @@ func TestUserDelete(t *testing.T) {
 		return
 	}
 
+	var engine *automationEngineMock
+	config.AutomationEngineUrl, engine = startAutomationEngineMock(t, false)
+	getEngineCalls := engine.getCalls
+
 	err = kafka2.InitTopic(config.KafkaBootstrap, config.UserTopic)
 	if err != nil {
 		t.Error(err)
@@ -136,7 +140,6 @@ func TestUserDelete(t *testing.T) {
 		return
 	}
 
-	scheduleIds := []string{}
 	dashboardIds := []string{}
 	importIds := []string{}
 	brokerExportsIds := []string{}
@@ -151,7 +154,6 @@ func TestUserDelete(t *testing.T) {
 
 	t.Run("init states", func(t *testing.T) {
 		t.Run("init waiting room state", initWaitingRoomState(config, user1, user2))
-		t.Run("init scheduler state", initSchedulerState(config, user1, user2, &scheduleIds))
 		t.Run("init dashboard state", initDashboardState(config, user1, user2, &dashboardIds))
 		t.Run("init imports state", initImportState(config, user1, user2, &importIds))
 		t.Run("init broker exports state", initBrokerExportState(config, user1, user2, &brokerExportsIds))
@@ -203,7 +205,12 @@ func TestUserDelete(t *testing.T) {
 
 	t.Run("check states after delete", func(t *testing.T) {
 		t.Run("check waiting room state", checkWaitingRoomState(config, user1, user2))
-		t.Run("check scheduler state", checkSchedulerState(config, user1, user2, scheduleIds))
+		t.Run("check automation-engine calls", func(t *testing.T) {
+			expected := []string{"DELETE /users/" + url.PathEscape(user1.GetUserId())}
+			if !slices.Equal(getEngineCalls(), expected) {
+				t.Errorf("calls = %#v", getEngineCalls())
+			}
+		})
 		t.Run("check dashboard state", checkDashboardState(config, user1, user2, dashboardIds))
 		t.Run("check imports state", checkImportsState(config, user1, user2, importIds))
 		t.Run("check broker exports state", checkBrokerExportsState(config, user1, user2, brokerExportsIds))
