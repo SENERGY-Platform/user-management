@@ -59,5 +59,9 @@ func getKeycloakRouter() (router *httprouter.Router, err error) {
 		}
 	})
 
+	router.HandlerFunc(http.MethodDelete, "/auth/admin/realms/master/users/:id", func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusNoContent)
+	})
+
 	return
 }

@@ -239,6 +239,8 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
+	// the user deletion ends in keycloak; without a reachable keycloak every deletion is retried
+	config.KeycloakUrl = keycloakUrl
 	keycloakUrl, err = LocalUrlToDockerUrl(keycloakUrl)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
