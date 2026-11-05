@@ -32,7 +32,7 @@ func Dashboard(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPor
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/senergy-platform/dashboard:latest",
 			Env: map[string]string{
-				"MONGO_REPL_URL": "mongodb://" + mongoIp + ":27017",
+				"MONGO_URL": "mongodb://" + mongoIp + ":27017",
 			},
 			ExposedPorts:    []string{"8080/tcp"},
 			WaitingFor:      wait.ForListeningPort("8080/tcp"),
