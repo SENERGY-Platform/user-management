@@ -165,21 +165,6 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 		return config, getDeviceRepoCalls, err
 	}
 
-	_, operatorDbIp, err := MongoContainer(ctx, wg)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	_, operatorIp, err := AnalyticsOperatorRepo(ctx, wg, operatorDbIp, permissionsV2Url)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	config.AnalyticsOperatorRepoUrl = "http://" + operatorIp + ":8000"
-
-	_, flowDbIp, err := MongoContainer(ctx, wg)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-
 	_, pipelineDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
@@ -190,11 +175,42 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.AnalyticsPipelineUrl = "http://" + pipelineIp + ":8000"
 
-	_, flowIp, err := AnalyticsFlowRepo(ctx, wg, flowDbIp, config.AnalyticsOperatorRepoUrl, permissionsV2Url, config.AnalyticsPipelineUrl)
+	// operator repo and flow repo ask each other before a delete; the operator repo starts first and
+	// reaches the flow repo through a proxy that learns the flow repo's address once it runs
+	flowRepoProxy := mocks.NewLateProxy(ctx, wg)
+	flowRepoProxyUrl, err := LocalUrlToDockerUrl(flowRepoProxy.URL)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+
+	_, operatorDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	_, operatorIp, err := AnalyticsOperatorRepo(ctx, wg, operatorDbIp, permissionsV2Url, flowRepoProxyUrl, config.AnalyticsPipelineUrl)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	config.AnalyticsOperatorRepoUrl = "http://" + operatorIp + ":8000"
+
+	smartServiceRepoUrl, err := LocalUrlToDockerUrl(mocks.SmartServiceRepositoryMock(ctx, wg))
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+
+	_, flowDbIp, err := MongoContainer(ctx, wg)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
+	_, flowIp, err := AnalyticsFlowRepo(ctx, wg, flowDbIp, config.AnalyticsOperatorRepoUrl, permissionsV2Url, config.AnalyticsPipelineUrl, smartServiceRepoUrl)
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
 	config.AnalyticsFlowRepoUrl = "http://" + flowIp + ":8080"
+	err = flowRepoProxy.SetTarget(config.AnalyticsFlowRepoUrl)
+	if err != nil {
+		return config, getDeviceRepoCalls, err
+	}
 
 	_, dbExportsIp, err := DatabaseExports(ctx, wg, dbExportsDbIp, rancherUrl, permissionsV2Url, influxIp, config.KafkaBootstrap, config.ImportsDeploymentUrl, config.AnalyticsPipelineUrl)
 	if err != nil {

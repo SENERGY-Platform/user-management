@@ -26,16 +26,17 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func AnalyticsFlowRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string, operatorRepoUrl string, permUrl string, piplelineRegUrl string) (hostPort string, ipAddress string, err error) {
+func AnalyticsFlowRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string, operatorRepoUrl string, permUrl string, piplelineRegUrl string, smartServiceRepoUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-flow-repo")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/senergy-platform/analytics-flow-repo-v2:v2.3.1",
 			Env: map[string]string{
-				"MONGO_URL":             "mongodb://" + mongoIp + ":27017",
-				"OPERATOR_REPO_URL":     operatorRepoUrl,
-				"PERMISSIONS_V2_URL":    permUrl,
-				"PIPELINE_REGISTRY_URL": piplelineRegUrl,
+				"MONGO_URL":                    "mongodb://" + mongoIp + ":27017",
+				"OPERATOR_REPO_URL":            operatorRepoUrl,
+				"PERMISSIONS_V2_URL":           permUrl,
+				"PIPELINE_REGISTRY_URL":        piplelineRegUrl,
+				"SMART_SERVICE_REPOSITORY_URL": smartServiceRepoUrl,
 			},
 			ExposedPorts:    []string{"8080/tcp"},
 			WaitingFor:      wait.ForListeningPort("8080/tcp"),

@@ -26,14 +26,16 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string, permUrl string) (hostPort string, ipAddress string, err error) {
+func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string, permUrl string, flowRepoUrl string, pipelineRegistryUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-operator-repo")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/senergy-platform/analytics-operator-repo-v2:v1.5.0",
 			Env: map[string]string{
-				"MONGO_URL":          "mongodb://" + mongoIp + ":27017",
-				"PERMISSIONS_V2_URL": permUrl,
+				"MONGO_URL":             "mongodb://" + mongoIp + ":27017",
+				"PERMISSIONS_V2_URL":    permUrl,
+				"FLOW_REPO_URL":         flowRepoUrl,
+				"PIPELINE_REGISTRY_URL": pipelineRegistryUrl,
 			},
 			ExposedPorts:    []string{"8000/tcp"},
 			WaitingFor:      wait.ForListeningPort("8000/tcp"),
