@@ -9,7 +9,7 @@ require (
 	github.com/SENERGY-Platform/device-repository v0.3.5
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.8.0
 	github.com/SENERGY-Platform/permissions-v2 v0.0.47
-	github.com/SENERGY-Platform/service-commons v0.0.0-20261016083822-dec36fce00ad
+	github.com/SENERGY-Platform/service-commons v0.0.0-20261105091033-c7af74115e58
 	github.com/SENERGY-Platform/vault-jwt-go v0.0.0-20230904060716-6561ce4b3f75
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
