@@ -30,7 +30,7 @@ func WaitingRoom(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (host
 	log.Println("start device-waiting-room")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/device-waiting-room:latest",
+			Image: "ghcr.io/senergy-platform/device-waiting-room:v0.0.12",
 			Env: map[string]string{
 				"MONGO_URL": mongoUrl,
 			},

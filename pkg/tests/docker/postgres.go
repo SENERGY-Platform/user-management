@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 InfAI (CC SES)
+ * Copyright 2026 InfAI (CC SES)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,26 +22,32 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func MysqlContainer(ctx context.Context, wg *sync.WaitGroup) (hostPort string, ipAddress string, err error) {
-	log.Println("start mysql")
+const (
+	PostgresUser     = "usr"
+	PostgresPassword = "pw"
+)
+
+func PostgresContainer(ctx context.Context, wg *sync.WaitGroup, dbname string) (hostPort string, ipAddress string, err error) {
+	log.Println("start postgres")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "mariadb:10.5",
+			Image: "postgres:18",
 			Env: map[string]string{
-				"MYSQL_ROOT_PASSWORD": "secret",
-				"MYSQL_DATABASE":      "mysql",
+				"POSTGRES_DB":       dbname,
+				"POSTGRES_USER":     PostgresUser,
+				"POSTGRES_PASSWORD": PostgresPassword,
 			},
-			ExposedPorts: []string{"3306/tcp"},
+			ExposedPorts: []string{"5432/tcp"},
+			// the init scripts run on a temporary server first, so the second ready message is the real one
 			WaitingFor: wait.ForAll(
-				wait.ForListeningPort("3306/tcp"),
+				wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
+				wait.ForListeningPort("5432/tcp"),
 			),
-			Tmpfs:           map[string]string{"/var/lib/mysql": "rw"},
-			AlwaysPullImage: true,
+			Tmpfs: map[string]string{"/var/lib/postgresql": "rw"},
 		},
 		Started: true,
 	})
@@ -53,15 +59,16 @@ func MysqlContainer(ctx context.Context, wg *sync.WaitGroup) (hostPort string, i
 	go func() {
 		defer wg.Done()
 		<-ctx.Done()
-		timeout, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		log.Println("DEBUG: remove container mysql", c.Terminate(timeout))
+		timeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		log.Println("DEBUG: remove container postgres", c.Terminate(timeout))
 	}()
 
 	ipAddress, err = c.ContainerIP(ctx)
 	if err != nil {
 		return "", "", err
 	}
-	temp, err := c.MappedPort(ctx, "3306/tcp")
+	temp, err := c.MappedPort(ctx, "5432/tcp")
 	if err != nil {
 		return "", "", err
 	}

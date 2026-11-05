@@ -35,31 +35,26 @@ func (this LogConsumer) Accept(log testcontainers.Log) {
 	fmt.Print(this.Prefix, string(log.Content))
 }
 
-func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, mysqlHost string, rancherUrl string, permSearchUrl string, influxDbHost string, kafkaUrl string, importDeployUrl string, pipelineApiUrl string) (hostPort string, ipAddress string, err error) {
+func DatabaseExports(ctx context.Context, wg *sync.WaitGroup, postgresHost string, rancherUrl string, permSearchUrl string, influxDbHost string, kafkaUrl string, importDeployUrl string, pipelineApiUrl string) (hostPort string, ipAddress string, err error) {
 	log.Println("start analytics-serving-service")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-serving-service:prod",
+			Image: "ghcr.io/senergy-platform/analytics-serving-service:v0.1.4",
 			Env: map[string]string{
-				"MYSQL_HOST":                 mysqlHost,
-				"MYSQL_USER":                 "root",
-				"MYSQL_PW":                   "secret",
-				"MYSQL_DB":                   "mysql",
-				"DOCKER_PULL":                "true",
-				"DRIVER":                     "ew",
-				"TRANSFER_IMAGE":             "ghcr.io/senergy-platform/hello-world:test",
-				"RANCHER2_ENDPOINT":          rancherUrl + "/",
-				"RANCHER_ACCESS_KEY":         "foo",
-				"RANCHER_SECRET_KEY":         "bar",
-				"PERMISSION_V2_URL":          permSearchUrl,
-				"API_PORT":                   "8080",
 				"SERVER_PORT":                "8080",
+				"DRIVER":                     "ew",
+				"POSTGRES_HOST":              postgresHost,
+				"POSTGRES_PORT":              "5432",
+				"PG_USER":                    PostgresUser,
+				"PG_PASSWORD":                PostgresPassword,
+				"POSTGRES_DB":                "serving",
+				"PERMISSION_V2_URL":          permSearchUrl,
 				"INFLUX_DB_HOST":             influxDbHost,
 				"KAFKA_BOOTSTRAP":            kafkaUrl,
+				"KAFKA_REPLICATION_FACTOR":   "1",
 				"PIPELINE_API_ENDPOINT":      pipelineApiUrl,
 				"IMPORT_DEPLOY_API_ENDPOINT": importDeployUrl,
 				"EXPORT_DATABASE_ID_PREFIX":  "urn:infai:ses:export-db:",
-				"KAFKA_REPLICATION_FACTOR":   "1",
 			},
 			ExposedPorts:    []string{"8080/tcp"},
 			WaitingFor:      wait.ForListeningPort("8080/tcp"),

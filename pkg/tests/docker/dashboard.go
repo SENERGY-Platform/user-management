@@ -30,7 +30,7 @@ func Dashboard(ctx context.Context, wg *sync.WaitGroup, mongoIp string) (hostPor
 	log.Println("start dashboard")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/dashboard:latest",
+			Image: "ghcr.io/senergy-platform/dashboard:v1.0.1",
 			Env: map[string]string{
 				"MONGO_URL": "mongodb://" + mongoIp + ":27017",
 			},

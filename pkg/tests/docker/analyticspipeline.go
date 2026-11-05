@@ -30,9 +30,9 @@ func AnalyticsPipeline(ctx context.Context, wg *sync.WaitGroup, mongoIp string, 
 	log.Println("start analytics-pipeline")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-pipeline:latest",
+			Image: "ghcr.io/senergy-platform/analytics-pipeline:v0.4.2",
 			Env: map[string]string{
-				"MONGO":              mongoIp,
+				"MONGO_URL":          "mongodb://" + mongoIp + ":27017",
 				"PERMISSIONS_V2_URL": permUrl,
 			},
 			ExposedPorts:    []string{"8000/tcp"},

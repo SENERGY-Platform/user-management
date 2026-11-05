@@ -156,7 +156,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	}
 	config.BrokerExportsUrl = "http://" + brokerExportsIp + ":8080"
 
-	_, dbExportsDbIp, err := MysqlContainer(ctx, wg)
+	_, dbExportsDbIp, err := PostgresContainer(ctx, wg, "serving")
 	if err != nil {
 		return config, getDeviceRepoCalls, err
 	}
@@ -203,21 +203,7 @@ func Start(basectx context.Context, wg *sync.WaitGroup, origConfig configuration
 	config.DatabaseExportsUrl = "http://" + dbExportsIp + ":8080"
 	log.Println("DatabaseExportsUrl = ", config.DatabaseExportsUrl)
 
-	parserMockUrl, err := LocalUrlToDockerUrl(mocks.AnalyticsParserMock(ctx, wg))
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-
-	_, mqttIp, err := Mqtt(ctx, wg)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-
-	_, engineIp, err := AnalyticsFlowEngine(ctx, wg, config.AnalyticsPipelineUrl, parserMockUrl, rancherUrl, "tcp://"+mqttIp+":1883", permissionsV2Url)
-	if err != nil {
-		return config, getDeviceRepoCalls, err
-	}
-	config.AnalyticsFlowEngineUrl = "http://" + engineIp + ":8000"
+	config.AnalyticsFlowEngineUrl = mocks.FlowEngineMock(ctx, wg, config.AnalyticsPipelineUrl)
 
 	_, notifierDbIp, err := MongoContainer(ctx, wg)
 	if err != nil {

@@ -30,12 +30,11 @@ func Imports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, importRep
 	log.Println("start import-deploy")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/import-deploy:latest",
+			Image: "ghcr.io/senergy-platform/import-deploy:v0.4.2",
 			Env: map[string]string{
 				"MONGO_URL":          mongoUrl,
 				"MONGO_REPL_SET":     "false",
 				"IMPORT_REPO_URL":    importRepoUrl,
-				"PERMISSIONS_URL":    permissionsUrl,
 				"KAFKA_BOOTSTRAP":    kafkaUrl,
 				"DEBUG":              "true",
 				"DOCKER_PULL":        "true",

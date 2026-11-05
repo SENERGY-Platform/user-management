@@ -30,11 +30,12 @@ func NotificationContainer(ctx context.Context, wg *sync.WaitGroup, mongoIp stri
 	log.Println("start notifier")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/notifier:latest",
+			Image: "ghcr.io/senergy-platform/notifier:v1.0.1",
 			Env: map[string]string{
-				"MONGO_ADDR":   mongoIp,
-				"KEYCLOAK_URL": keycloakUrl,
-				"VAULT_URL":    vaultUrl,
+				"MONGO_URL":              "mongodb://" + mongoIp + ":27017",
+				"KEYCLOAK_CLIENT_SECRET": "secret",
+				"KEYCLOAK_URL":           keycloakUrl,
+				"VAULT_URL":              vaultUrl,
 			},
 			ExposedPorts:    []string{"5000/tcp"},
 			WaitingFor:      wait.ForListeningPort("5000/tcp"),

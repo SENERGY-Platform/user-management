@@ -30,7 +30,7 @@ func BrokerExports(ctx context.Context, wg *sync.WaitGroup, mongoUrl string, ran
 	log.Println("start kafka2mqtt-manager")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/kafka2mqtt-manager:prod",
+			Image: "ghcr.io/senergy-platform/kafka2mqtt-manager:v1.1.1",
 			Env: map[string]string{
 				"MONGO_URL":          mongoUrl,
 				"MONGO_REPL_SET":     "false",

@@ -30,9 +30,9 @@ func AnalyticsFlowRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp string, 
 	log.Println("start analytics-flow-repo")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-flow-repo-v2:latest",
+			Image: "ghcr.io/senergy-platform/analytics-flow-repo-v2:v2.3.1",
 			Env: map[string]string{
-				"MONGO_URL":             mongoIp,
+				"MONGO_URL":             "mongodb://" + mongoIp + ":27017",
 				"OPERATOR_REPO_URL":     operatorRepoUrl,
 				"PERMISSIONS_V2_URL":    permUrl,
 				"PIPELINE_REGISTRY_URL": piplelineRegUrl,

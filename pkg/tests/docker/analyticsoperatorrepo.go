@@ -30,9 +30,9 @@ func AnalyticsOperatorRepo(ctx context.Context, wg *sync.WaitGroup, mongoIp stri
 	log.Println("start analytics-operator-repo")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/analytics-operator-repo-v2:latest",
+			Image: "ghcr.io/senergy-platform/analytics-operator-repo-v2:v1.5.0",
 			Env: map[string]string{
-				"MONGO_URL":          mongoIp,
+				"MONGO_URL":          "mongodb://" + mongoIp + ":27017",
 				"PERMISSIONS_V2_URL": permUrl,
 			},
 			ExposedPorts:    []string{"8000/tcp"},

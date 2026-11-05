@@ -30,7 +30,7 @@ func PermissionsV2(ctx context.Context, wg *sync.WaitGroup, mongoUrl string) (ho
 	log.Println("start permissions-v2")
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "ghcr.io/senergy-platform/permissions-v2:prod",
+			Image: "ghcr.io/senergy-platform/permissions-v2:v1.1.3",
 			Env: map[string]string{
 				"DEV_NOTIFIER_URL": "",
 				"MONGO_URL":        mongoUrl,
