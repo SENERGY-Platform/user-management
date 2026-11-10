@@ -111,6 +111,9 @@ func TestUserDelete(t *testing.T) {
 	config.AutomationEngineUrl, engine = startAutomationEngineMock(t, false)
 	getEngineCalls := engine.getCalls
 
+	var importRepo *importRepositoryMock
+	config.ImportRepositoryUrl, importRepo = startImportRepositoryMock(t, false)
+
 	err = kafka2.InitTopic(config.KafkaBootstrap, config.UserTopic)
 	if err != nil {
 		t.Error(err)
@@ -220,6 +223,11 @@ func TestUserDelete(t *testing.T) {
 		t.Run("check flows state", checkFlowState(config, user1, user2, flowIds))
 		t.Run("check flows engine state", checkFlowEngineState(config, user1, user2, flowEngineIds))
 		t.Run("check notification state", checkNotificationState(config, user1, user2, notificationIds, brokerIds))
+		t.Run("check import-repository call", func(t *testing.T) {
+			if !slices.Contains(importRepo.getCalls(), "DELETE /users/"+url.PathEscape(user1.GetUserId())) {
+				t.Errorf("calls = %#v", importRepo.getCalls())
+			}
+		})
 		t.Run("check device-repo call", func(t *testing.T) {
 			if !slices.Contains(getDeviceRepoCalls(), "DELETE /users/"+url.PathEscape(user1.GetUserId())) {
 				t.Errorf("calls = %#v", getDeviceRepoCalls())

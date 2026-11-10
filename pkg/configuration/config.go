@@ -50,6 +50,7 @@ type Config struct {
 	AutomationEngineUrl      string
 	DashboardServiceUrl      string
 	ImportsDeploymentUrl     string
+	ImportRepositoryUrl      string
 	BrokerExportsUrl         string
 	DatabaseExportsUrl       string
 	AnalyticsOperatorRepoUrl string

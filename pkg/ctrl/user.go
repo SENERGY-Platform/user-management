@@ -53,6 +53,12 @@ func DeleteUser(userId string, conf configuration.Config) (err error) {
 		conf.GetLogger().Error("unable to delete user from imports-service", "userId", userId, "error", err)
 		return err
 	}
+	// after the import instances, which use the import types
+	err = DeleteImportRepositoryUser(userId, conf)
+	if err != nil {
+		conf.GetLogger().Error("unable to delete user from import-repository", "userId", userId, "error", err)
+		return err
+	}
 	err = DeleteBrokerExportsUser(token, conf)
 	if err != nil {
 		conf.GetLogger().Error("unable to delete user from broker-exports-service", "userId", userId, "error", err)
