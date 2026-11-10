@@ -381,3 +381,13 @@ func CreateTokenWithRoles(issuer string, userId string, roles []string) (token T
 	token.RealmAccess = realmAccess
 	return token, nil
 }
+
+// adminToken is for the user endpoints of automation-engine and import-repository, which accept
+// only the admin role
+func adminToken() (JwtImpersonate, error) {
+	token, err := CreateTokenWithRoles("users-service", "user-management", []string{"admin"})
+	if err != nil {
+		return JwtImpersonate{}, err
+	}
+	return token.Impersonate(), nil
+}

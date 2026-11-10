@@ -51,22 +51,13 @@ func automationEngineEnabled(conf configuration.Config) bool {
 	return conf.AutomationEngineUrl != "" && conf.AutomationEngineUrl != "-"
 }
 
-// the engine accepts the user endpoints only with the admin role
-func automationEngineToken() (JwtImpersonate, error) {
-	token, err := CreateTokenWithRoles("users-service", "user-management", []string{"admin"})
-	if err != nil {
-		return JwtImpersonate{}, err
-	}
-	return token.Impersonate(), nil
-}
-
 // CheckAutomationEngineUser calls the dry run of the user deletion and returns ErrUserDeletionBlocked
 // if the engine would reject it. It deletes nothing.
 func CheckAutomationEngineUser(userId string, conf configuration.Config) error {
 	if !automationEngineEnabled(conf) {
 		return nil
 	}
-	token, err := automationEngineToken()
+	token, err := adminToken()
 	if err != nil {
 		return err
 	}
@@ -91,7 +82,7 @@ func DeleteAutomationEngineUser(userId string, conf configuration.Config) error 
 	if !automationEngineEnabled(conf) {
 		return nil
 	}
-	token, err := automationEngineToken()
+	token, err := adminToken()
 	if err != nil {
 		return err
 	}
